@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="FrontEnd.fs" />
+    <Compile Include="Scanner.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

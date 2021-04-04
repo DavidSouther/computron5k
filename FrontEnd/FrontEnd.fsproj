@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="FrontEnd.fs" />
+    <Compile Include="Scanner.fs" />
   </ItemGroup>
 
 </Project>

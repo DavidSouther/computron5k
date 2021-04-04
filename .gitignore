@@ -1,3 +1,5 @@
-﻿.vs/
+﻿.ionide/
+.vscode/
+.vs/
 bin/
 obj/
