@@ -49,20 +49,24 @@
 ### Parser
 	
 	Parser
-		parse(tokens: TokenStream) -> ParseResult
-
-	ParseResult
-		Tree: AST
+		AddInfixOperator (lbp, rbp, Set<string>, Option<Set<string>>)
+		AddPostfixOperator (rbp, Set<string>, Option<Set<string>>)
+		AddPrefixOperator (lbp, Set<string>, Option<Set<string>>)
+		parse TokenStream -> Tree<Token>
 
 ## AST/IR
+	Tree<'T>: 'T * List<Tree<'T>>
+	
+	// A depth first transformer which reuses structure as
+	// much as possible when the transform function does
+	// not modify the node.
+	Transformer (Tree<'T> -> Tree<'T>)
+		member Transform: Tree<'T> -> Tree<'T>
 
-	ASTNode:
-		Token
-		Children: List<ASTNode>
-
+	// A 
 	ASTPass:
 		dependsOn: List<ASTPass>
-		transform(root: ASTNode) -> ASTNode
+		transform: Tree -> Tree 
 
 	IRList
 
