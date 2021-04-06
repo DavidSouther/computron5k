@@ -4,7 +4,11 @@ type TokenType =
     abstract member Priority : int
     abstract member Matches : string -> Option<string>
 
-type LiteralTokenType(tokens: List<string>, ?priority0: int) =
+type Position = { file: string; index: int; line: int; column: int; }
+
+type Token = { tokenType: TokenType; value: string; position: Position }
+
+type LiteralTokenType (tokens: List<string>, ?priority0: int) =
     let priority = defaultArg priority0 20
     member this.tokens =
         tokens
@@ -61,10 +65,6 @@ module BaseTokenTypes =
     let ErrorTokenType = ErrorTokenType ()
     let WhiteSpaceTokenType = RegexTokenType([System.Text.RegularExpressions.Regex("^\s+")], 4)
     let NewlineTokenType = RegexTokenType([System.Text.RegularExpressions.Regex("^\n")], 6)
-
-type Position = { file: string; index: int; line: int; column: int; }
-
-type Token = { tokenType: TokenType; value: string; position: Position }
 
 type Scanner (contents: string, file: string) = 
     let mutable contents = contents
