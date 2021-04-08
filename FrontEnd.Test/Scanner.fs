@@ -1,16 +1,17 @@
 module Scanner.Test
 
-open NUnit.Framework
 open FsUnit
-open Scanner 
+open NUnit.Framework
 open System.Text.RegularExpressions
+
+open Scanner 
 
 [<TestFixture>]
 type BaseTokenTypes () =
     let matched (tokenType: TokenType) (token: string) =
         let matched =
             tokenType.ToMatch
-            |> List.map(fun s -> Regex(sprintf("^%s")(s), RegexOptions.Singleline))
+            |> List.map(fun s -> Regex($"^{s}", RegexOptions.Singleline))
             |> List.map(fun r -> r.Match token)
             |> List.filter(fun m -> m.Success)
             |> List.sortBy(fun m -> -m.Value.Length)
@@ -25,14 +26,14 @@ type BaseTokenTypes () =
     let matchAll (tokenType: TokenType) (tokens: List<string>) =
         for token in tokens do 
             match matched tokenType token with
-            | None -> Assert.Fail(sprintf("Could not match %s")(token))
-            | Some (actual) -> Assert.AreEqual(token, actual)
+            | None -> Assert.Fail $"Could not match {token}"
+            | Some actual -> Assert.AreEqual(token, actual)
             
     let matchNone (tokenType: TokenType) (tokens: List<string>) =
         for token in tokens do 
             match matched tokenType token with
             | None -> ()
-            | Some (a) -> Assert.That(token.StartsWith(a), Is.False, token)
+            | Some a -> Assert.That(token.StartsWith(a), Is.False, token)
 
     [<Test>]
     member _.EOF () =
@@ -105,7 +106,7 @@ type TestMatcher () =
     let matcher = Matcher BaseTokenTypes.ALL
     let expect (contents: string, offset: int) (value: string, tokenType: TokenType) =
         match matcher.MatchTokenType(contents, offset) with
-        | None -> Assert.Fail(sprintf("Expected %s got None")(value))
+        | None -> Assert.Fail $"Expected Some {value} got None"
         | Some (matchedType, matched) ->
             Assert.AreEqual(matchedType.Name, tokenType.Name)
             Assert.AreEqual(value, matched)
@@ -122,7 +123,7 @@ type TestMatcher () =
 
 [<TestFixture>]
 type TestScanner () =
-    let keywordTokenType = TokenType("Keyword", 100, [
+    let keywordTokenType = TokenType.From("Keyword", 100, [
         "if"
         "then"
         "else"
