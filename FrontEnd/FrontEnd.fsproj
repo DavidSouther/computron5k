@@ -10,4 +10,8 @@
     <Compile Include="Parser.fs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\AST\AST.fsproj" />
+  </ItemGroup>
+
 </Project>

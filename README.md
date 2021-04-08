@@ -27,15 +27,25 @@
 		Message: String
 		Token: Token(type = ErrorToken)
 
-### Lexer
+### Scanner
+
+	RegexStr:
+		a literal
+		a? zero or one
+		a* zero or more
+		a+ one or more
+		a|b Alternate
+		[a-z] range
+		(abc) grouping
+
+	Scanner
+		Register (RegexStr, TokenType)
 
 	Token 
 		Type: TokenType 
 		Value: String 
 		Position: (file, line, column)
 
-	TokenType
-		match(input: String) -> String;
 
 	RegexTokenType: TokenType
 		pattern: String
