@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "ac": {
+      "commandName": "Project",
+      "commandLineArgs": "acTestFile.txt",
+      "workingDirectory": "."
+    }
+  }
+}

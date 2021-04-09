@@ -1,0 +1,13 @@
+﻿f x x=12.345   p x
+i a i b  a = 42  b = a   p b
+x = b   p x
+a = a - 2   p a
+b = a + b   p b
+i c c = b - a + 10 - a   p c
+x = x + 9.99  p x
+x = x - 1 + c   p x
+y = x
+x = y
+c = x
+a = b + d - 1  p a
+f c

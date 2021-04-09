@@ -101,6 +101,19 @@ type BaseTokenTypes () =
             "/** A long\n * comment with\n * lines. */"
         ]
 
+    [<Test>]
+    member _.Whitespace () =
+        matchAll BaseTokenTypes.Whitespace [
+            "  "
+            "\t"
+            "\n"
+            "\r\n" 
+            "\r\n    "
+            "\n    "
+        ]
+
+        "\r\n".IndexOf("\r\n") |> should equal 0
+
 [<TestFixture>]
 type TestMatcher () =
     let matcher = Matcher BaseTokenTypes.ALL
@@ -129,7 +142,7 @@ type TestScanner () =
         "else"
     ])
 
-    let operatorTokenType = LiteralTokenType("Operator", 100, [
+    let operatorTokenType = TokenType.Literal("Operator", 100, [
         "<"
     ])
 
@@ -141,10 +154,10 @@ type TestScanner () =
         ScannerFactory(tokenTypes).Scan(input, "test")
 
     let expectToken (token: Token) ((tokenType: string, value: string, line: int, column: int))=
-        token.tokenType.Name |> should equal tokenType
-        token.value |> should equal value
-        token.position.line |> should equal line
-        token.position.column |> should equal column
+        token.Type.Name |> should equal tokenType
+        token.Value |> should equal value
+        token.Position.Line |> should equal line
+        token.Position.Column |> should equal column
         
     [<Test>]
     member this.advancesThough () =
@@ -165,6 +178,21 @@ type TestScanner () =
             ("Keyword", "else", 3, 1)
             ("Whitespace", " ", 3, 5)
             ("Identifier", "a", 3, 6)
+            ("EOF", "", 3, 7)
+        ] 
+        for expected in expectedTokens do
+            let token = scanner.Advance ()
+            expectToken token.Value expected
+
+    [<Test>]
+    member this.advancesWindowsLines () =
+        let scanner = makeScanner "a\r\nb\r\na"
+        let expectedTokens: List<string*string*int*int> = [
+            ("Identifier", "a", 1, 1)
+            ("Whitespace", "\r\n", 1, 2)
+            ("Identifier", "b", 2, 1)
+            ("Whitespace", "\r\n", 2, 2)
+            ("Identifier", "a", 3, 1)
             ("EOF", "", 3, 7)
         ] 
         for expected in expectedTokens do

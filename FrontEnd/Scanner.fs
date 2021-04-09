@@ -4,20 +4,36 @@ type TokenType =
     { Name: string;
       Priority: int;
       ToMatch: List<string>; }
+
+    override t.ToString () = t.Name
+
     static member From (name: string, priority: int, toMatch: List<string>) =
         { TokenType.Name = name; Priority = priority; ToMatch = toMatch; }
     
-let LiteralTokenType (name: string, priority: int, toMatch: List<string>) =
-    let toMatch =
-        toMatch
-        |> List.map System.Text.RegularExpressions.Regex.Escape
-        // Sort by longest first, so that longer literals match before shorter literals
-        |> List.sortBy (fun s -> -s.Length)
-    TokenType.From(name, priority, toMatch)
+    static member Literal (name: string, priority: int, toMatch: List<string>) =
+        let toMatch =
+            toMatch
+            |> List.map System.Text.RegularExpressions.Regex.Escape
+            // Sort by longest first, so that longer literals match before shorter literals
+            |> List.sortBy (fun s -> -s.Length)
+        TokenType.From(name, priority, toMatch)
 
-type Position = { file: string; index: int; line: int; column: int; }
+type Position =
+    { File: string;
+      Index: int;
+      Line: int;
+      Column: int; }
 
-type Token = { tokenType: TokenType; value: string; position: Position }
+    override t.ToString () = $"{t.File}({t.Line},{t.Column}) [{t.Index}]"
+
+type Token =
+    { Type: TokenType;
+      Value: string;
+      Position: Position; }
+
+    override t.ToString () =
+        let value = t.Value.Replace("\r", "").Replace("\n", "\\n")
+        $"'{value}' ({t.Type} at {t.Position})"
 
 module BaseTokenTypes =
     let EOF = TokenType.From("EOF", 0, [@"$"])
@@ -28,8 +44,8 @@ module BaseTokenTypes =
     ])
 
     let Value = TokenType.From("Value", 30, [
-         @"-?[0-9_]+" // Integers
          @"-?([0-9_]+|0)\.[0-9_]+" // Decimals
+         @"-?[0-9_]+" // Integers
          @"0x[0-9A-Fa-f_]+" // Hexademimal
          @"0b[01_]+" // Binary
          @"'(.*?[^\\]|)'" // ' Strings
@@ -41,6 +57,7 @@ module BaseTokenTypes =
     ])
 
     let Whitespace = TokenType.From("Whitespace", 30, [
+        @"\r?\n\s+" // Newline and indentation, explicitly as its own class 
         @"\s+" // Multiline, lazy 
     ])
 
@@ -100,21 +117,22 @@ type Scanner (matcher: Matcher, contents: string, file: string) =
     let mutable next: Option<Token> = None
 
     let position () = {
-        Position.file = file;
-        index = index
-        line = line;
-        column = column;
+        Position.File = file;
+        Index = index
+        Line = line;
+        Column = column;
     }
 
     let makeToken (tokenType: TokenType) (value: string) = {
-        Token.tokenType = tokenType;
-        value = value;
-        position = position();
+        Token.Type = tokenType;
+        Value = value;
+        Position = position();
     }
 
     let step (stride: string) =
         let d = stride.Length
-        let q = stride.IndexOf("\n")
+        let mutable q = stride.IndexOf("\n")
+        if q = -1 then q <- stride.IndexOf("\r\n")
         if q > -1 then
             line <- line + 1
             column <- d - q

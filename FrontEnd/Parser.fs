@@ -8,10 +8,10 @@ type InfixOperatorMap = Map<string, int * int * string>
 type PrefixOperatorMap = Map<string, int * string>
 type PostfixOperatorMap = Map<string, int * string>
 type Operators = InfixOperatorMap * PrefixOperatorMap * PostfixOperatorMap
-type Identifiers = RegexTokenType
-type Values = RegexTokenType
-type Whitespace = RegexTokenType
-type Comments = RegexTokenType
+type Identifiers = TokenType
+type Values = TokenType
+type Whitespace = TokenType
+type Comments = TokenType
 type Keywords = Set<string>
 
 type Parser (scanner: Scanner) =
