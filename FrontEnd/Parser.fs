@@ -4,18 +4,189 @@ open AST
 
 open Scanner
 
-type InfixOperatorMap = Map<string, int * int * string>
-type PrefixOperatorMap = Map<string, int * string>
-type PostfixOperatorMap = Map<string, int * string>
-type Operators = InfixOperatorMap * PrefixOperatorMap * PostfixOperatorMap
+type Operator =
+    abstract Token: string
+    abstract bindingPower: int
+    abstract leftAction: Parser -> (* left *) Tree<Token> -> Token -> Tree<Token>
+    abstract nullAction: Parser -> Token -> Tree<Token>
+and Parser =
+    abstract expression: (* mbp *) int  -> Tree<Token> 
+    abstract expect: (* token *) string -> Token
+
 type Identifiers = TokenType
 type Values = TokenType
 type Whitespace = TokenType
 type Comments = TokenType
 type Keywords = Set<string>
 
-type Parser (scanner: Scanner) =
-    class end
+let makeOperatorParts (operators: List<Operator>) =
+    let allOps = operators |> List.map(fun op -> (op.Token, op))
+    let opsMap = allOps |> Map.ofList
+    let (allOps, _) = allOps |> List.unzip
+    let opsToken = TokenType.Literal("Operator", 100, allOps)
+    (opsToken, opsMap)
 
-type ParserFactory = Keywords * Operators * Identifiers * Values * Comments * Whitespace -> Parser
-    
+let errorPosition =
+    { Position.File = "unknown";
+        Line = -1;
+        Column = -1;
+        Index = -1 }
+
+let errorToken (value: string, position: Position) =
+     { Token.Value = $"'{value}'";
+       Position = position;
+       Type =
+       { TokenType.Name = "ERROR";
+         Priority = -1;
+         ToMatch = []}}
+
+let defaultToSkip = ["Whitespace"; "Comment"] |> Set.ofList
+
+type BinaryOperator (token: string, bindingPower: int, ?leftAssociative0: bool) =
+    let nextBindingPower =
+        if defaultArg leftAssociative0 true
+        then bindingPower + 1
+        else bindingPower - 1
+    member _.Token = token
+    interface Operator with
+        member _.Token = token
+        member _.bindingPower = bindingPower
+        member t.nullAction (_: Parser) (token: Token) =
+            Tree.Leaf(errorToken($"Expected {t.Token} on left side", token.Position))
+        member _.leftAction (parser: Parser) (left: Tree<Token>) (token: Token) =
+            let right = parser.expression nextBindingPower
+            Tree.Node(token, [left; right])
+
+let RightBinaryOperator (token: string, bindingPower: int) =
+    BinaryOperator(token, bindingPower, false)
+
+type MixedOperator (token: string, bindingPower: int, prefixBindingPower: int, ?leftAssociative0: bool) =
+    let nextBindingPower =
+        if defaultArg leftAssociative0 true
+        then bindingPower + 1
+        else bindingPower - 1
+    member _.Token = token
+    interface Operator with
+        member _.Token = token
+        member _.bindingPower = bindingPower
+        member t.nullAction (parser: Parser) (token: Token) =
+            let right = parser.expression prefixBindingPower
+            Tree.Node(token, [right]) 
+        member _.leftAction (parser: Parser) (left: Tree<Token>) (token: Token) =
+            let right = parser.expression nextBindingPower
+            Tree.Node(token, [left; right])
+
+type GroupOperator (token: string, close: string) =
+    member _.Token = token
+    interface Operator with
+        member _.Token = token
+        member _.bindingPower = 0
+        member _.nullAction (parser: Parser) (token: Token) =
+            let group = parser.expression 0
+            let errorToken = parser.expect ")"
+            if errorToken.Type.Name = "ERROR"
+            then
+                Tree.Node(errorToken, [group])
+            else
+                group
+        member _.leftAction (parser: Parser) (left: Tree<Token>) (token: Token) =
+            let error = errorToken($"Unexpected {token.Value} in infix position", token.Position)
+            Tree.Node(error, [left])
+
+type ParserFactory (scannerFactory: ScannerFactory, operatorMap: Map<string, Operator>, ?toSkip0: Set<string>) =
+    let toSkip = defaultArg toSkip0 defaultToSkip
+
+    let doParse (scanner: Scanner): Tree<Token> = 
+        let shouldSkip () =
+            match scanner.Next with
+            | None -> true
+            | Some t -> toSkip.Contains t.Type.Name
+
+        let consume () = while shouldSkip() do scanner.Advance() |> ignore
+        let Peek () =
+            consume()
+            match scanner.Next with
+            | None -> errorToken("ERROR", errorPosition)
+            | Some t -> t
+        let Advance () =
+            let peek = Peek()
+            scanner.Advance() |> ignore
+            peek
+
+        let mutable parser: Parser =
+            { new Parser with
+                member _.expression (mbp: int) =
+                    Tree.Leaf(errorToken("Unimplemented Parser", errorPosition))
+                member _.expect (token: string) =
+                    errorToken("Unimplemented Parser", errorPosition) }
+
+        let nud (token: Token) =
+            if operatorMap.ContainsKey token.Value
+            then operatorMap.[token.Value].nullAction parser token
+            else Tree.Leaf token
+
+        let led (token: Token) (left: Tree<Token>) =
+            if operatorMap.ContainsKey token.Value
+            then operatorMap.[token.Value].leftAction parser left token
+            else left
+
+        let bp () =
+            let token = Peek()
+            if token.Type.Name = "EOF"
+            then -1
+            else
+                if operatorMap.ContainsKey token.Value
+                then operatorMap.[token.Value].bindingPower
+                else 0
+
+        let expression (ebp: int) =
+            let peek = Advance ()            
+            let mutable left = nud peek
+            while ebp < bp () do
+                let peek = Advance ()
+                left <- led peek left
+            left
+
+        parser <- { new Parser with
+            member _.expression (mbp: int) =
+                let peek = Advance ()            
+                let mutable left = nud peek
+                while mbp < bp () do
+                    let peek = Advance ()
+                    left <- led peek left
+                left
+            member _.expect (token: string) =
+                let peek = Advance ()
+                if peek.Value = token
+                then peek
+                else errorToken($"Expected {token}, got {peek.Value}", peek.Position) }
+
+        parser.expression 0
+        
+    member this.Parse (contents, file) =
+        doParse(scannerFactory.Scan(contents, file))
+
+    static member For
+        (
+            operators: List<Operator>,
+            ?keywords0: Keywords,
+            ?identifiers0: Identifiers,
+            ?values0: Values,
+            ?comments0: Comments,
+            ?whitespace0: Whitespace
+         ) =
+            let identifiers = defaultArg identifiers0 BaseTokenTypes.Identifier
+            let values = defaultArg values0 BaseTokenTypes.Value
+            let comments = defaultArg comments0 BaseTokenTypes.Comment
+            let whitespace = defaultArg whitespace0 BaseTokenTypes.Whitespace
+
+            let (operatorTokenType, operatorMap) = makeOperatorParts operators
+            let mutable tokenTypes = [operatorTokenType; identifiers; values; comments; whitespace; BaseTokenTypes.Error; BaseTokenTypes.EOF]
+
+            let keywords = defaultArg keywords0 Set.empty
+            if not keywords.IsEmpty then
+                let keywords = TokenType.Literal("Keywords", 80, keywords |> Set.toList)
+                tokenTypes <- tokenTypes @ [keywords]
+                
+            let scanner = ScannerFactory tokenTypes
+            ParserFactory(scanner, operatorMap)

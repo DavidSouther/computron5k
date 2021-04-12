@@ -193,7 +193,7 @@ type TestScanner () =
             ("Identifier", "b", 2, 1)
             ("Whitespace", "\r\n", 2, 2)
             ("Identifier", "a", 3, 1)
-            ("EOF", "", 3, 7)
+            ("EOF", "", 3, 2)
         ] 
         for expected in expectedTokens do
             let token = scanner.Advance ()

@@ -16,5 +16,6 @@ let main argv =
     let file = argv.[0]
     let scanner = scanner.From file
     while not(isEOF(scanner.Advance())) do
-        Console.WriteLine scanner.Next
+        scanner.Next.Value.ToRepl()
+        |> Console.WriteLine
     0 // return an integer exit code

@@ -31,7 +31,9 @@ type Token =
       Value: string;
       Position: Position; }
 
-    override t.ToString () =
+    override t.ToString () = t.Value
+
+    member t.ToRepl () =
         let value = t.Value.Replace("\r", "").Replace("\n", "\\n")
         $"'{value}' ({t.Type} at {t.Position})"
 
@@ -131,9 +133,11 @@ type Scanner (matcher: Matcher, contents: string, file: string) =
 
     let step (stride: string) =
         let d = stride.Length
+        let carriageNewline = stride.Contains("\r\n")
         let mutable q = stride.IndexOf("\n")
         if q = -1 then q <- stride.IndexOf("\r\n")
         if q > -1 then
+            if carriageNewline then q <- q + 1
             line <- line + 1
             column <- d - q
         else

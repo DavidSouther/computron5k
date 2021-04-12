@@ -13,7 +13,7 @@ type ASTTest () =
                 Tree.Leaf("a")
                 Tree.Leaf("b")
             ])
-        let sExpression = node.ToSExpression()
+        let sExpression = node |> Tree.ToSExpression
         Assert.That(sExpression, Is.EqualTo("(+ a b)"))
 
     [<Test>]
@@ -34,6 +34,6 @@ type ASTTest () =
                 Tree.Leaf("b")
             ])
         let tree2 = replaceA.Transform(tree)
-        let sExpression = tree2.ToSExpression()
+        let sExpression = tree2 |> Tree.ToSExpression
         Assert.That(sExpression, Is.EqualTo("(+ x b)"))
 
