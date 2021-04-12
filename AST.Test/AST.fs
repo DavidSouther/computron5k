@@ -1,5 +1,6 @@
 module AST.Test
 
+open FsUnit
 open NUnit.Framework
 open AST
 
@@ -13,8 +14,9 @@ type ASTTest () =
                 Tree.Leaf("a")
                 Tree.Leaf("b")
             ])
-        let sExpression = node |> Tree.ToSExpression
-        Assert.That(sExpression, Is.EqualTo("(+ a b)"))
+        node
+        |> Tree.ToSExpression
+        |> should equal "(+ a b)"
 
     [<Test>]
     member _.Visit () =
@@ -33,7 +35,6 @@ type ASTTest () =
                 Tree.Leaf("a")
                 Tree.Leaf("b")
             ])
-        let tree2 = replaceA.Transform(tree)
-        let sExpression = tree2 |> Tree.ToSExpression
-        Assert.That(sExpression, Is.EqualTo("(+ x b)"))
-
+        replaceA.Transform(tree)
+        |> Tree.ToSExpression
+        |> should equal "(+ x b)"

@@ -156,9 +156,11 @@ type Scanner (matcher: Matcher, contents: string, file: string) =
         step value
         token
 
-    member this.Next = next
+    member _.File = file
 
-    member this.Advance ()  =
+    member _.Next = next
+
+    member _.Advance ()  =
         next <- Some(
             match matcher.MatchTokenType(contents, index) with
             | None -> errorToken()

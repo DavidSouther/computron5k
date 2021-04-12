@@ -5,7 +5,6 @@ open NUnit.Framework
 
 open AST
 open Parser
-open Scanner
 
 [<TestFixture>]
 type TestParser () =
@@ -48,7 +47,10 @@ type TestParser () =
     let parser = ParserFactory.For operators
 
     let parse input =
-        parser.Parse(input, "test")
+        let tree = parser.Parse(input, "test")
+        match tree with
+        | Node (t, []) -> tree
+        | Node (t, c) -> c.Head
         |> Tree.ToSExpression
 
     [<Test>]

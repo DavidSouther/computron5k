@@ -6,11 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="ac.fs" />
     <Content Include="acTestFile.txt" />
     <Compile Include="Program.fs" />
   </ItemGroup>
-
-  <ItemGroup />
 
   <ItemGroup>
     <ProjectReference Include="..\FrontEnd\FrontEnd.fsproj" />

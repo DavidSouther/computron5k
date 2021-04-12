@@ -17,7 +17,6 @@
   <ItemGroup>
     <Compile Include="Parser.fs" />
     <Compile Include="Scanner.fs" />
-    <Compile Include="Program.fs" />
   </ItemGroup>
 
   <ItemGroup>

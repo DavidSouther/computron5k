@@ -1,21 +1,26 @@
 ﻿open System
 
-open Scanner
+open AST
+open ac
 
-let operators = TokenType.Literal("Operators", 20, ["+"; "-"; "="; "i"; "f"; "p"])
-let identifiers = TokenType.From("Identifiers", 20, ["[a-eghj-oq-z]"])
-let whitespace = BaseTokenTypes.Whitespace
+let scan (file: string) = 
+    let scanner = scanner.From file
+    while not(ac.isEOF(scanner.Advance())) do
+        scanner.Next.Value.ToRepl()
+        |> Console.WriteLine
 
-let scanner = ScannerFactory [operators; identifiers; BaseTokenTypes.Value; BaseTokenTypes.Whitespace; BaseTokenTypes.EOF;]
-
-let isEOF (next: Option<Token>) =
-    next.IsSome && next.Value.Type.Name = BaseTokenTypes.EOF.Name
+let parse (file: string) =
+    parser.ParseFile file
+    |> Tree.ToSExpression
+    |> System.Console.WriteLine
 
 [<EntryPoint>]
 let main argv =
     let file = argv.[0]
-    let scanner = scanner.From file
-    while not(isEOF(scanner.Advance())) do
-        scanner.Next.Value.ToRepl()
-        |> Console.WriteLine
+    let op = if argv.Length > 1 then argv.[1] else "parse"
+    match op with
+    | "scan" -> scan file 
+    | "parse" -> parse file
+    | _ -> parse file
+
     0 // return an integer exit code

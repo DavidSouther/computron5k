@@ -12,6 +12,7 @@ type Operator =
 and Parser =
     abstract expression: (* mbp *) int  -> Tree<Token> 
     abstract expect: (* token *) string -> Token
+    abstract next: unit -> Token
 
 type Identifiers = TokenType
 type Values = TokenType
@@ -76,6 +77,20 @@ type MixedOperator (token: string, bindingPower: int, prefixBindingPower: int, ?
             let right = parser.expression nextBindingPower
             Tree.Node(token, [left; right])
 
+type RightOperator (token: string, bindingPower: int, ?nullAction0: Parser -> Token -> Tree<Token>) =
+    member _.Token = token
+    interface Operator with
+        member _.Token = token
+        member _.bindingPower = bindingPower
+        member t.nullAction (parser: Parser) (token: Token) =
+            match nullAction0 with
+            | Some action -> action parser token
+            | None ->
+                let right = parser.expression bindingPower
+                Tree.Node(token, [right]) 
+        member _.leftAction (parser: Parser) (left: Tree<Token>) (token: Token) =
+            Tree.Leaf(errorToken($"Expected {token.Value} on right side", token.Position))
+
 type GroupOperator (token: string, close: string) =
     member _.Token = token
     interface Operator with
@@ -108,6 +123,7 @@ type ParserFactory (scannerFactory: ScannerFactory, operatorMap: Map<string, Ope
             match scanner.Next with
             | None -> errorToken("ERROR", errorPosition)
             | Some t -> t
+
         let Advance () =
             let peek = Peek()
             scanner.Advance() |> ignore
@@ -118,6 +134,8 @@ type ParserFactory (scannerFactory: ScannerFactory, operatorMap: Map<string, Ope
                 member _.expression (mbp: int) =
                     Tree.Leaf(errorToken("Unimplemented Parser", errorPosition))
                 member _.expect (token: string) =
+                    errorToken("Unimplemented Parser", errorPosition)
+                member _.next () =
                     errorToken("Unimplemented Parser", errorPosition) }
 
         let nud (token: Token) =
@@ -133,19 +151,11 @@ type ParserFactory (scannerFactory: ScannerFactory, operatorMap: Map<string, Ope
         let bp () =
             let token = Peek()
             if token.Type.Name = "EOF"
-            then -1
+            then System.Int32.MinValue 
             else
                 if operatorMap.ContainsKey token.Value
                 then operatorMap.[token.Value].bindingPower
                 else 0
-
-        let expression (ebp: int) =
-            let peek = Advance ()            
-            let mutable left = nud peek
-            while ebp < bp () do
-                let peek = Advance ()
-                left <- led peek left
-            left
 
         parser <- { new Parser with
             member _.expression (mbp: int) =
@@ -159,12 +169,36 @@ type ParserFactory (scannerFactory: ScannerFactory, operatorMap: Map<string, Ope
                 let peek = Advance ()
                 if peek.Value = token
                 then peek
-                else errorToken($"Expected {token}, got {peek.Value}", peek.Position) }
+                else errorToken($"Expected {token}, got {peek.Value}", peek.Position)
+            member _.next () =
+                Advance () }
 
-        parser.expression 0
+        let rootToken = 
+            { Token.Value = $"program:{scanner.File}"
+              Type =
+                { TokenType.Name = "ROOT"
+                  Priority = 0
+                  ToMatch = [] }
+              Position =
+                { Position.File = scanner.File
+                  Line = 1
+                  Column = 1
+                  Index = 0 }}
+
+        let isEOF (next: Token) =
+            next.Type.Name = BaseTokenTypes.EOF.Name
+
+        // Parse until the scanner is empty
+        let mutable expressions: List<Tree<Token>> = List.empty
+        while not(isEOF(Peek())) do
+            expressions <- expressions @ [parser.expression 0]
+        Tree.Node(rootToken, expressions)
         
-    member this.Parse (contents, file) =
+    member _.Parse (contents, file) =
         doParse(scannerFactory.Scan(contents, file))
+
+    member _.ParseFile (path: string) =
+        doParse(scannerFactory.From(path))
 
     static member For
         (

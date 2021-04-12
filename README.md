@@ -46,7 +46,6 @@
 		Value: String 
 		Position: (file, line, column)
 
-
 	RegexTokenType: TokenType
 		pattern: String
 
@@ -59,9 +58,7 @@
 ### Parser
 	
 	Parser
-		AddInfixOperator (lbp, rbp, Set<string>, Option<Set<string>>)
-		AddPostfixOperator (rbp, Set<string>, Option<Set<string>>)
-		AddPrefixOperator (lbp, Set<string>, Option<Set<string>>)
+		Operators: token, bindingPower, leftAction, rightAction
 		parse TokenStream -> Tree<Token>
 
 ## AST/IR
