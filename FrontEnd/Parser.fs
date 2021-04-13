@@ -12,7 +12,6 @@ type Operator =
 and Parser =
     abstract expression: (* mbp *) int  -> Tree<Token> 
     abstract expect: (* token *) string -> Token
-    abstract next: unit -> Token
 
 type Identifiers = TokenType
 type Values = TokenType
@@ -43,7 +42,7 @@ let errorToken (value: string, position: Position) =
 
 let defaultToSkip = ["Whitespace"; "Comment"] |> Set.ofList
 
-type BinaryOperator (token: string, bindingPower: int, ?leftAssociative0: bool) =
+type BinaryOperator (token: string, bindingPower: int, ?leftAssociative0: bool, ?close: string) =
     let nextBindingPower =
         if defaultArg leftAssociative0 true
         then bindingPower + 1
@@ -56,6 +55,7 @@ type BinaryOperator (token: string, bindingPower: int, ?leftAssociative0: bool) 
             Tree.Leaf(errorToken($"Expected {t.Token} on left side", token.Position))
         member _.leftAction (parser: Parser) (left: Tree<Token>) (token: Token) =
             let right = parser.expression nextBindingPower
+            if close.IsSome then parser.expect close.Value |> ignore
             Tree.Node(token, [left; right])
 
 let RightBinaryOperator (token: string, bindingPower: int) =
@@ -91,19 +91,21 @@ type RightOperator (token: string, bindingPower: int, ?nullAction0: Parser -> To
         member _.leftAction (parser: Parser) (left: Tree<Token>) (token: Token) =
             Tree.Leaf(errorToken($"Expected {token.Value} on right side", token.Position))
 
-type GroupOperator (token: string, close: string) =
+type GroupOperator (token: string, close: string, ?scope0: bool) =
+    let scope = defaultArg scope0 false
     member _.Token = token
     interface Operator with
         member _.Token = token
         member _.bindingPower = 0
         member _.nullAction (parser: Parser) (token: Token) =
             let group = parser.expression 0
-            let errorToken = parser.expect ")"
+            let errorToken = parser.expect close
             if errorToken.Type.Name = "ERROR"
-            then
-                Tree.Node(errorToken, [group])
+            then Tree.Node(token, [group; Tree.Leaf errorToken])
             else
-                group
+                if scope
+                then Tree.Node(token, [group])
+                else group
         member _.leftAction (parser: Parser) (left: Tree<Token>) (token: Token) =
             let error = errorToken($"Unexpected {token.Value} in infix position", token.Position)
             Tree.Node(error, [left])
@@ -135,8 +137,7 @@ type ParserFactory (scannerFactory: ScannerFactory, operatorMap: Map<string, Ope
                     Tree.Leaf(errorToken("Unimplemented Parser", errorPosition))
                 member _.expect (token: string) =
                     errorToken("Unimplemented Parser", errorPosition)
-                member _.next () =
-                    errorToken("Unimplemented Parser", errorPosition) }
+                    }
 
         let nud (token: Token) =
             if operatorMap.ContainsKey token.Value
@@ -170,8 +171,7 @@ type ParserFactory (scannerFactory: ScannerFactory, operatorMap: Map<string, Ope
                 if peek.Value = token
                 then peek
                 else errorToken($"Expected {token}, got {peek.Value}", peek.Position)
-            member _.next () =
-                Advance () }
+                }
 
         let rootToken = 
             { Token.Value = $"program:{scanner.File}"
