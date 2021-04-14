@@ -1,18 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="ac.fs" />
-    <Content Include="acTestFile.txt" />
-    <Compile Include="Program.fs" />
+    <Compile Include="SymbolTable.fs" />
+    <Compile Include="Pass.fs" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Analysis\Analysis.fsproj" />
     <ProjectReference Include="..\AST\AST.fsproj" />
     <ProjectReference Include="..\FrontEnd\FrontEnd.fsproj" />
   </ItemGroup>

@@ -18,11 +18,21 @@ type Tree<'T when 'T : equality> =
                 |> String.concat(" ")
             $"({car} {cdr})"
 
-type Transformer<'T when 'T: equality> (transform: Tree<'T> -> Tree<'T>) =
+type Transformer<'T when 'T: equality>
+    ( transform: Tree<'T> -> Tree<'T>,
+      ?inAction0: Tree<'T> -> unit,
+      ?outAction0: Tree<'T> -> unit) =
+    let inAction = defaultArg inAction0 (fun t -> ())
+    let outAction = defaultArg outAction0 (fun t -> ())
     member this.Transform (tree: Tree<'T>) =
-        match tree with
-        | Node (t, c) ->
-            let c2 = c |> List.map(fun t -> this.Transform(t))
-            let sameChildren = List.forall2 LanguagePrimitives.PhysicalEquality c c2
-            if sameChildren then transform(tree) else transform(Node(t, c2))
+        inAction tree |> ignore
+        let tree =
+            match tree with
+            | Node (t, c) ->
+                let c2 = c |> List.map(fun t -> this.Transform(t))
+                let sameChildren = List.forall2 LanguagePrimitives.PhysicalEquality c c2
+                if sameChildren then transform(tree) else transform(Node(t, c2))
+        outAction tree |> ignore
+        tree
+
 

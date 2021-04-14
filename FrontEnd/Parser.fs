@@ -12,6 +12,7 @@ type Operator =
 and Parser =
     abstract expression: (* mbp *) int  -> Tree<Token> 
     abstract expect: (* token *) string -> Token
+    abstract next: unit -> Token
 
 type Identifiers = TokenType
 type Values = TokenType
@@ -137,6 +138,8 @@ type ParserFactory (scannerFactory: ScannerFactory, operatorMap: Map<string, Ope
                     Tree.Leaf(errorToken("Unimplemented Parser", errorPosition))
                 member _.expect (token: string) =
                     errorToken("Unimplemented Parser", errorPosition)
+                member _.next () =
+                    errorToken("Unimplemented Parser", errorPosition)
                     }
 
         let nud (token: Token) =
@@ -171,6 +174,8 @@ type ParserFactory (scannerFactory: ScannerFactory, operatorMap: Map<string, Ope
                 if peek.Value = token
                 then peek
                 else errorToken($"Expected {token}, got {peek.Value}", peek.Position)
+            member _.next () =
+                Advance ()
                 }
 
         let rootToken = 
