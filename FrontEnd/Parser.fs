@@ -43,7 +43,13 @@ let errorToken (value: string, position: Position) =
 
 let defaultToSkip = ["Whitespace"; "Comment"] |> Set.ofList
 
-type BinaryOperator (token: string, bindingPower: int, ?leftAssociative0: bool, ?close: string) =
+type BinaryOperator
+    ( token: string,
+      bindingPower: int,
+      ?leftAssociative0: bool,
+      ?close: string,
+      ?continuation0: bool) =
+    let continuation = defaultArg continuation0 false
     let nextBindingPower =
         if defaultArg leftAssociative0 true
         then bindingPower + 1
@@ -54,10 +60,19 @@ type BinaryOperator (token: string, bindingPower: int, ?leftAssociative0: bool, 
         member _.bindingPower = bindingPower
         member t.nullAction (_: Parser) (token: Token) =
             Tree.Leaf(errorToken($"Expected {t.Token} on left side", token.Position))
-        member _.leftAction (parser: Parser) (left: Tree<Token>) (token: Token) =
+        member t.leftAction (parser: Parser) (left: Tree<Token>) (token: Token) =
             let right = parser.expression nextBindingPower
             if close.IsSome then parser.expect close.Value |> ignore
-            Tree.Node(token, [left; right])
+            let (Node (rToken, rChildren)) = right 
+            let (Node (lToken, lChildren)) = left
+            if continuation &&
+                token.Value = t.Token &&
+                lToken.Value = token.Value
+            then
+                if rToken.Value = token.Value
+                then Tree.Node(token, lChildren @ rChildren)
+                else Tree.Node(token, lChildren @ [right])
+            else Tree.Node(token, [left; right])
 
 let RightBinaryOperator (token: string, bindingPower: int) =
     BinaryOperator(token, bindingPower, false)

@@ -31,7 +31,10 @@ type Token =
       Value: string;
       Position: Position; }
 
-    override t.ToString () = t.Value
+    override t.ToString () =
+        if t.Type.Name = "ERROR"
+        then $"Err:{t.Value}"
+        else t.Value
 
     member t.ToRepl () =
         let value = t.Value.Replace("\r", "").Replace("\n", "\\n")
@@ -39,7 +42,7 @@ type Token =
 
 module BaseTokenTypes =
     let EOF = TokenType.From("EOF", 0, [@"$"])
-    let Error = TokenType.From("Error", -1, [@"."])
+    let Error = TokenType.From("ERROR", -1, [@"."])
 
     let Identifier = TokenType.From("Identifier", 50, [
         @"[a-zA-Z_][a-zA-Z0-9_]*"

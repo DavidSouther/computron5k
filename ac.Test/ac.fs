@@ -16,6 +16,15 @@ type ACTest () =
         |> AST.Tree.ToSExpression
         |> should equal "(program:test (f x) (= x 12.345) (p x))"
 
+        parse "x x x x"
+        |> AST.Tree.ToSExpression
+        |> should equal "(program:test x x x x)"
+
+        parse "x - 5 = 6 + 10"
+        |> AST.Tree.ToSExpression
+        |> should equal "(program:test (= (- x 5) (+ 6 10)))"
+
+
     [<Test>]
     member _.Scope () =
         let ast = parse "i a f x"

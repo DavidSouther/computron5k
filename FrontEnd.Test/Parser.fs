@@ -57,3 +57,18 @@ type TestParser () =
         parse "a = 0 ? b : c = d" |> should equal "(= a (= (? 0 b c :) d))"
         parse "{ b = c }" |> should equal "({ (= b c))"
 
+
+    [<Test>]
+    member _.TestContinuation () =
+        let parser = ParserFactory.For [
+            BinaryOperator(";", 1, continuation0=true)
+            RightBinaryOperator("=", 10)
+        ]
+        let parse input =
+            let tree = parser.Parse(input, "test")
+            match tree with
+            | Node (t, []) -> tree
+            | Node (t, c) -> c.Head
+            |> Tree.ToSExpression
+        parse "a; b; c" |> should equal "(; a b c)"
+        parse "a = b; c" |> should equal "(; (= a b) c)"
