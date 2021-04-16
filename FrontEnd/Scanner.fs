@@ -3,12 +3,13 @@
 type TokenType =
     { Name: string;
       Priority: int;
-      ToMatch: List<string>; }
+      ToMatch: List<string>;
+      Error: bool; }
 
     override t.ToString () = t.Name
 
     static member From (name: string, priority: int, toMatch: List<string>) =
-        { TokenType.Name = name; Priority = priority; ToMatch = toMatch; }
+        { TokenType.Name = name; Priority = priority; ToMatch = toMatch; Error = false }
     
     static member Literal (name: string, priority: int, toMatch: List<string>) =
         let toMatch =
@@ -32,8 +33,8 @@ type Token =
       Position: Position; }
 
     override t.ToString () =
-        if t.Type.Name = "ERROR"
-        then $"Err:{t.Value}"
+        if t.Type.Error
+        then $"~Err:{t.Value}~"
         else t.Value
 
     member t.ToRepl () =
@@ -42,7 +43,7 @@ type Token =
 
 module BaseTokenTypes =
     let EOF = TokenType.From("EOF", 0, [@"$"])
-    let Error = TokenType.From("ERROR", -1, [@"."])
+    let Error = TokenType.From("Unknown", -1, [@"."])
 
     let Identifier = TokenType.From("Identifier", 50, [
         @"[a-zA-Z_][a-zA-Z0-9_]*"

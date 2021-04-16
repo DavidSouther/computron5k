@@ -37,9 +37,10 @@ let errorToken (value: string, position: Position) =
      { Token.Value = $"'{value}'";
        Position = position;
        Type =
-       { TokenType.Name = "ERROR";
+       { TokenType.Name = "ParseError";
          Priority = -1;
-         ToMatch = []}}
+         ToMatch = [];
+         Error = true }}
 
 let defaultToSkip = ["Whitespace"; "Comment"] |> Set.ofList
 
@@ -109,14 +110,13 @@ type RightOperator (token: string, bindingPower: int, ?nullAction0: Parser -> To
 
 type GroupOperator (token: string, close: string, ?scope0: bool) =
     let scope = defaultArg scope0 false
-    member _.Token = token
     interface Operator with
         member _.Token = token
         member _.bindingPower = 0
         member _.nullAction (parser: Parser) (token: Token) =
             let group = parser.expression 0
             let errorToken = parser.expect close
-            if errorToken.Type.Name = "ERROR"
+            if errorToken.Type.Name = "ParseError"
             then Tree.Node(token, [group; Tree.Leaf errorToken])
             else
                 if scope
@@ -139,7 +139,7 @@ type ParserFactory (scannerFactory: ScannerFactory, operatorMap: Map<string, Ope
         let Peek () =
             consume()
             match scanner.Next with
-            | None -> errorToken("ERROR", errorPosition)
+            | None -> errorToken("UNEXPECTED_EOF", errorPosition)
             | Some t -> t
 
         let Advance () =
@@ -150,11 +150,11 @@ type ParserFactory (scannerFactory: ScannerFactory, operatorMap: Map<string, Ope
         let mutable parser: Parser =
             { new Parser with
                 member _.expression (mbp: int) =
-                    Tree.Leaf(errorToken("Unimplemented Parser", errorPosition))
+                    Tree.Leaf(errorToken("UNIMPLEMENTED_PARSER", errorPosition))
                 member _.expect (token: string) =
-                    errorToken("Unimplemented Parser", errorPosition)
+                    errorToken("UNIMPLEMENTED_PARSER", errorPosition)
                 member _.next () =
-                    errorToken("Unimplemented Parser", errorPosition)
+                    errorToken("UNIMPLEMENTED_PARSER", errorPosition)
                     }
 
         let nud (token: Token) =
@@ -198,7 +198,8 @@ type ParserFactory (scannerFactory: ScannerFactory, operatorMap: Map<string, Ope
               Type =
                 { TokenType.Name = "ROOT"
                   Priority = 0
-                  ToMatch = [] }
+                  ToMatch = []
+                  Error = false}
               Position =
                 { Position.File = scanner.File
                   Line = 1
