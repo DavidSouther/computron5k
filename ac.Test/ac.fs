@@ -43,16 +43,14 @@ type ACTest () =
 
     [<Test>]
     member _.ScopeError () =
-        let ast = parse "i i i"
+        let ast = parse "i f i"
         let analyzer = PassManager.Empty.AddPass(Passes.ScanErrors)
         let errors =
             AST.TreeErrors.List ast
             |> String.concat "\n\n"
-        let expected = """
-Err: i@test(1,3) ::
-\tExpected Identifier, got 'i' (Operator at test(1,3))
+        let expected = "Err: i@test(1,3) ::
+\tExpected Identifier, got 'f' (Operator at test(1,3))
 
 Err: @test(1,6) ::
-\tExpected Identifier, got '' (EOF at test(1,6))
-"""
-        $"\n{errors}\n" |> should equal expected
+\tExpected Identifier, got '' (EOF at test(1,6))".Replace("\r", "")
+        errors |> should equal expected

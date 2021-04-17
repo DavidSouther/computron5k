@@ -4,6 +4,7 @@ open FsUnit
 open NUnit.Framework
 open System.Text.RegularExpressions
 
+open AST
 open Scanner 
 
 [<TestFixture>]
