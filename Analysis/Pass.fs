@@ -15,19 +15,14 @@ type PassManager (?passes0: List<Transformer<TreeData>>) =
             tree <- pass.Transform tree
         tree
 
-module TreeErrors =
-    let Get (tree: Tree<TreeData>): List<string> =
-        let (Node(d, _)) = tree
-        if d.Data.ContainsKey("errors")
-        then d.Data.["errors"] :?> List<string>
-        else []
-
-    let Add (tree: Tree<TreeData>) (error: string): Tree<TreeData> =
-        let (Node(d, c)) = tree
-        let errors: List<string> = Get(tree) @ [error]
-        Tree.Node({d with Data = d.Data.Add("errors", errors)}, c)
-
 module Passes =
+    let ScanErrors: Transformer<TreeData> =
+        let scanErrors (tree: Tree<TreeData>): Tree<TreeData> =
+            let (Node(d, c)) = tree
+            if d.Token.Type.Name = "Unknown"
+            then AST.TreeErrors.Add tree $"Unknown token type: {d.Token.Value}"
+            else tree
+        Transformer scanErrors
     let ScopePass: Transformer<TreeData> =
         let mutable scopes = [SymbolTable.Empty]
         let pushScope (tree: Tree<TreeData>) =

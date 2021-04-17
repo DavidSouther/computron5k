@@ -1,9 +1,11 @@
 ﻿namespace Analysis
 
+open AST
+
 type Symbol =
     { Name: string;
-      Declared: Scanner.Position;
-      Initialized: Option<Scanner.Position>;
+      Declared: Position;
+      Initialized: Option<Position>;
       Data: Map<string, obj>;
       }
 
@@ -12,8 +14,8 @@ type Scope =
     abstract New: unit -> Scope
     abstract Set: string * Symbol -> Result<Scope, string>
     abstract Get: string -> Option<Symbol>
-    abstract Declare: string * Scanner.Position * Option<Map<string, obj>> -> Result<Scope, string>
-    abstract Initialize: string * Scanner.Position -> Result<Scope, string>
+    abstract Declare: string * Position * Option<Map<string, obj>> -> Result<Scope, string>
+    abstract Initialize: string * Position -> Result<Scope, string>
 
 type SymbolTable (?parent: Scope, ?symbols0: Map<string, Symbol>) =
     static member Empty: Scope = SymbolTable() :> Scope

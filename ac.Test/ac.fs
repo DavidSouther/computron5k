@@ -40,3 +40,19 @@ type ACTest () =
             |> List.sortBy id
             |> String.concat(" ")
         symbols |> should equal "a:i x:f"
+
+    [<Test>]
+    member _.ScopeError () =
+        let ast = parse "i i i"
+        let analyzer = PassManager.Empty.AddPass(Passes.ScanErrors)
+        let errors =
+            AST.TreeErrors.List ast
+            |> String.concat "\n\n"
+        let expected = """
+Err: i@test(1,3) ::
+\tExpected Identifier, got 'i' (Operator at test(1,3))
+
+Err: @test(1,6) ::
+\tExpected Identifier, got '' (EOF at test(1,6))
+"""
+        $"\n{errors}\n" |> should equal expected

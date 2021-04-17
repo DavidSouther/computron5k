@@ -3,14 +3,6 @@
 open AST
 open Scanner
 
-type TreeData =
-    { Token: Token; Data: Map<string, obj> }
-    override t.ToString () = t.Token.ToString()
-
-let TreeNode (token: Token) (children: List<Tree<TreeData>>): Tree<TreeData> =
-    Tree.Node({ TreeData.Token = token; Data = Map.empty }, children)
-let TreeLeaf (token: Token): Tree<TreeData> = TreeNode token []
-
 type Operator =
     abstract Token: string
     abstract bindingPower: int

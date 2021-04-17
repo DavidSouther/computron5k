@@ -1,45 +1,6 @@
 ﻿module Scanner 
 
-type TokenType =
-    { Name: string;
-      Priority: int;
-      ToMatch: List<string>;
-      Error: bool; }
-
-    override t.ToString () = t.Name
-
-    static member From (name: string, priority: int, toMatch: List<string>) =
-        { TokenType.Name = name; Priority = priority; ToMatch = toMatch; Error = false }
-    
-    static member Literal (name: string, priority: int, toMatch: List<string>) =
-        let toMatch =
-            toMatch
-            |> List.map System.Text.RegularExpressions.Regex.Escape
-            // Sort by longest first, so that longer literals match before shorter literals
-            |> List.sortBy (fun s -> -s.Length)
-        TokenType.From(name, priority, toMatch)
-
-type Position =
-    { File: string;
-      Index: int;
-      Line: int;
-      Column: int; }
-
-    override t.ToString () = $"{t.File}({t.Line},{t.Column}) [{t.Index}]"
-
-type Token =
-    { Type: TokenType;
-      Value: string;
-      Position: Position; }
-
-    override t.ToString () =
-        if t.Type.Error
-        then $"~Err:{t.Value}~"
-        else t.Value
-
-    member t.ToRepl () =
-        let value = t.Value.Replace("\r", "").Replace("\n", "\\n")
-        $"'{value}' ({t.Type} at {t.Position})"
+open AST
 
 module BaseTokenTypes =
     let EOF = TokenType.From("EOF", 0, [@"$"])

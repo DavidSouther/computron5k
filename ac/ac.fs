@@ -5,14 +5,17 @@ open Parser
 open Scanner
 open Analysis
 
-let operatorTokens = TokenType.Literal("Operators", 20, ["+"; "-"; "="; "i"; "f"; "p"])
-let identifiers = TokenType.From("Identifiers", 20, ["[a-eghj-oq-z]"])
+let operatorTokens = TokenType.Literal("Operator", 20, ["+"; "-"; "="; "i"; "f"; "p"])
+let identifiers = TokenType.From("Identifier", 20, ["[a-eghj-oq-z]"])
 let whitespace = BaseTokenTypes.Whitespace
 
 let scanner = ScannerFactory [operatorTokens; identifiers; BaseTokenTypes.Value; BaseTokenTypes.Whitespace; BaseTokenTypes.EOF;]
 
 let decl (parser: Parser) (token: Token) =
-    TreeNode token [TreeLeaf(parser.next())]
+    let next = parser.next()
+    match next.Type.Name with
+    | "Identifier" -> TreeNode token [TreeLeaf(next)]
+    | _ -> TreeNode token [TreeErrors.Add(TreeLeaf(next))($"Expected Identifier, got {next.ToRepl()}")]
 
 let operators: List<Operator> = [
     RightOperator("f", -5, decl)
