@@ -2,12 +2,7 @@
 
 open AST
 open Scanner
-
-type ScopeData = Token * Scope
-
-type TreeData =
-    | Token of Token
-    | Scope of ScopeData
+open Parser
 
 type PassManager (?passes0: List<Transformer<TreeData>>) =
     let passes = defaultArg passes0 []
@@ -20,22 +15,33 @@ type PassManager (?passes0: List<Transformer<TreeData>>) =
             tree <- pass.Transform tree
         tree
 
-module Passes  =
+module TreeErrors =
+    let Get (tree: Tree<TreeData>): List<string> =
+        let (Node(d, _)) = tree
+        if d.Data.ContainsKey("errors")
+        then d.Data.["errors"] :?> List<string>
+        else []
+
+    let Add (tree: Tree<TreeData>) (error: string): Tree<TreeData> =
+        let (Node(d, c)) = tree
+        let errors: List<string> = Get(tree) @ [error]
+        Tree.Node({d with Data = d.Data.Add("errors", errors)}, c)
+
+module Passes =
     let ScopePass: Transformer<TreeData> =
-        (*
         let mutable scopes = [SymbolTable.Empty]
-        let mutable scopeMap: Map<TreeData, Scope> = Map.Empty
-        let handleScope (tree: Tree<TreeData>) =
-            match tree with
-            | Node (t, c) ->
-                match t with
-                | Token t ->
-                    if t.Value = "{"
-                    then
-                        let scope = scopes.Head.New ()
-                        scopes <- scope :: scopes
-                        Tree.Node
-                | _ -> tree
-        Transformer(handleScope, popScope)
-        *)
-        Transformer id
+        let pushScope (tree: Tree<TreeData>) =
+            let (Node(d, c)) = tree
+            if d.Token.Value = "{" || d.Token.Type.Name = "ROOT"
+            then
+                let scope = scopes.Head.New ()
+                scopes <- scope :: scopes
+                Tree.Node({d with Data = d.Data.Add("scope", scope)}, c)
+            else tree
+        let popScope (tree: Tree<TreeData>) =
+            let (Node(d, _)) = tree
+            if d.Token.Value = "{" || d.Token.Type.Name = "ROOT"
+            then scopes <- scopes.Tail
+            tree
+        Transformer(id, inAction0=pushScope, outAction0=popScope)
+

@@ -22,16 +22,15 @@ type TestParser () =
         { new Operator with
             member _.Token = "?"
             member t.bindingPower = 20
-            member t.leftAction (parser: Parser) (condition: Tree<Token>) (token: Token) =
+            member t.leftAction (parser: Parser) (condition: Tree<TreeData>) (token: Token) =
                 let bp = t.bindingPower - 1
                 let truth = parser.expression bp
-                let error = parser.expect ":" |> Tree.Leaf
+                let error = parser.expect ":" |> TreeLeaf
                 let falsy = parser.expression bp
-                Tree.Node(token, [condition; truth; falsy; error])
+                TreeNode token [condition; truth; falsy; error]
             member _.nullAction (parser: Parser) (token: Token) =
                 let error = errorToken($"Unexpected {token.Value} in prefix position", token.Position)
-                Tree.Leaf error
-                }
+                TreeLeaf error }
     ]
     let parser = ParserFactory.For operators
 

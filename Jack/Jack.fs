@@ -36,7 +36,7 @@ let ifStatement (parser: Parser) (token: Token) =
     let mutable children = [expression; thenBody]
     if parser.next().Type.Name = "else"
     then children <- children @ [parser.expression(0)]
-    Tree.Node(token, children)
+    TreeNode token children
 
 let operators: List<Operator> = [
     BinaryOperator(".", 100)
@@ -58,7 +58,7 @@ let operators: List<Operator> = [
         member _.Token = "let"
         member _.bindingPower = 5
         member _.leftAction _ left token =
-            Tree.Node({token with Value = $"{token.Value} not expected as infix"}, [left])
+            TreeNode {token with Value = $"{token.Value} not expected as infix"} [left]
         member _.nullAction parser token =
             let mutable id = parser.next ()
             let err = { id with
@@ -69,14 +69,14 @@ let operators: List<Operator> = [
                   else id
             parser.expect "=" |> ignore
             let body = parser.expression 6
-            Tree.Node(token, [Tree.Leaf(id); body]) }
+            TreeNode token [TreeLeaf(id); body] }
     { new Operator with // Call operator infix or group operator prefix
         member _.Token = "("
         member _.bindingPower = 1
         member _.leftAction parser left token =
             let right = parser.expression 0
             parser.expect(")") |> ignore
-            Tree.Node({token with Value = "call"}, [left; right])
+            TreeNode {token with Value = "call"} [left; right]
         member _.nullAction parser token =
             let right = parser.expression 0
             parser.expect(")") |> ignore

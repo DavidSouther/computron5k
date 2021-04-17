@@ -4,6 +4,7 @@ type Symbol =
     { Name: string;
       Declared: Scanner.Position;
       Initialized: Option<Scanner.Position>;
+      Data: Map<string, obj>;
       }
 
 type Scope =
@@ -11,7 +12,7 @@ type Scope =
     abstract New: unit -> Scope
     abstract Set: string * Symbol -> Result<Scope, string>
     abstract Get: string -> Option<Symbol>
-    abstract Declare: string * Scanner.Position -> Result<Scope, string>
+    abstract Declare: string * Scanner.Position * Option<Map<string, obj>> -> Result<Scope, string>
     abstract Initialize: string * Scanner.Position -> Result<Scope, string>
 
 type SymbolTable (?parent: Scope, ?symbols0: Map<string, Symbol>) =
@@ -39,7 +40,7 @@ type SymbolTable (?parent: Scope, ?symbols0: Map<string, Symbol>) =
                     | None -> SymbolTable(symbols0=updatedMap)
                     :> Scope
                 Ok updatedTable
-        member t.Declare (name, position) =
+        member t.Declare (name, position, data) =
             if t.symbols.ContainsKey name
             then
                 Error $"Cannot redeclare symbol {name}"
@@ -48,7 +49,7 @@ type SymbolTable (?parent: Scope, ?symbols0: Map<string, Symbol>) =
                     { Symbol.Name = name;
                       Declared = position;
                       Initialized = None;
-                      }
+                      Data = if data.IsSome then data.Value else Map.empty; }
                 (t :> Scope).Set(name, symbol)
         member t.Initialize (name, position) =
             if not(t.symbols.ContainsKey(name))

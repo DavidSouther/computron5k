@@ -28,11 +28,15 @@ type ACTest () =
     [<Test>]
     member _.Scope () =
         let ast = parse "i a f x"
-        (*
-        let analyzer = PassManager.Empty.AddPass ScopePass
-        let analysis = analyzer.Run ast
-        let table = analysis.scope :?> SymbolTable
-        table.symbols
-        *)
-        ()
-
+        let analyzer = PassManager.Empty.AddPass(Passes.ScopePass).AddPass(ac.DeclPass)
+        let (AST.Tree.Node(data, _)) = analyzer.Run ast
+        let table = data.Data.["scope"] :?> SymbolTable
+        let symbols =
+            table.symbols
+            |> Seq.toList
+            |> List.map(fun t -> 
+                let declType = t.Value.Data.["type"]
+                $"{t.Key}:{declType}")
+            |> List.sortBy id
+            |> String.concat(" ")
+        symbols |> should equal "a:i x:f"
