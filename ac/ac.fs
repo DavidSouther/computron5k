@@ -136,6 +136,16 @@ and FValue (value: float) =
             FValue(t.Value - value) :> Value
 
 
+let getValue (tree: TreeData): Value =
+    if tree.Data.ContainsKey "value"
+    then tree.Data.["value"]
+    else FValue.NaN :> obj
+    :?> Value
+
+let setValue (tree: Tree<TreeData>) (value: Value): Tree<TreeData> =
+    let (Node(d, c)) = tree
+    Tree.Node({d with Data = d.Data.Add("value", value)}, c)
+
 let InterpretPass: Transformer<TreeData> =
     let mutable scope = SymbolTable.Empty
     let mutable scopes = [scope]
@@ -163,11 +173,10 @@ let InterpretPass: Transformer<TreeData> =
         let (Node(d, c)) = tree
         match d.Token.Type.Name with
         | "Value" ->
-            let value =
-                if d.Token.Value.Contains "."
-                then FValue.From(d.Token.Value) :> Value
-                else IValue.From(d.Token.Value) :> Value
-            Tree.Node({d with Data = d.Data.Add("value", value)}, c)
+            if d.Token.Value.Contains "."
+            then FValue.From(d.Token.Value) :> Value
+            else IValue.From(d.Token.Value) :> Value
+            |> setValue tree 
         | "Operator" ->
             match d.Token.Value with
             | "=" ->
@@ -190,18 +199,12 @@ let InterpretPass: Transformer<TreeData> =
             | "+" ->
                 match Tree.BinOp tree with
                 | Some (lhs, rhs) ->
-                    let lhs = (if lhs.Data.ContainsKey "value" then lhs.Data.["value"] else FValue.NaN :> obj) :?> Value
-                    let rhs = (if rhs.Data.ContainsKey "value" then rhs.Data.["value"] else FValue.NaN :> obj) :?> Value
-                    let value = lhs.Add(rhs) 
-                    Tree.Node({d with Data = d.Data.Add("value", value)}, c)
+                    getValue(lhs).Add(getValue(rhs)) |> setValue tree
                 | None -> TreeErrors.Add tree $"ADD missing sides"
             | "-" ->
                 match Tree.BinOp tree with
                 | Some (lhs, rhs) ->
-                    let lhs = (if lhs.Data.ContainsKey "value" then lhs.Data.["value"] else FValue.NaN :> obj) :?> Value
-                    let rhs = (if rhs.Data.ContainsKey "value" then rhs.Data.["value"] else FValue.NaN :> obj) :?> Value
-                    let value = lhs.Sub(rhs) 
-                    Tree.Node({d with Data = d.Data.Add("value", value)}, c)
+                    getValue(lhs).Sub(getValue(rhs)) |> setValue tree
                 | None -> TreeErrors.Add tree $"SUB missing sides"
             | "p" ->
                 let (Node(id, _)) = c.Head 
