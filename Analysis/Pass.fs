@@ -1,8 +1,6 @@
 ﻿namespace Analysis
 
 open AST
-open Scanner
-open Parser
 
 type PassManager (?passes0: List<Transformer<TreeData>>) =
     let passes = defaultArg passes0 []

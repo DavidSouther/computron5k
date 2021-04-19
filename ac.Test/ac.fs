@@ -3,6 +3,7 @@
 open FsUnit
 open NUnit.Framework
 
+open ac
 open Analysis
 
 [<TestFixture>]
@@ -54,3 +55,16 @@ type ACTest () =
 Err: @test(1,6) ::
 \tExpected Identifier, got '' (EOF at test(1,6))".Replace("\r", "")
         errors |> should equal expected
+
+    [<Test>]
+    member _.Value () =
+        let a = "12.345" |> FValue.From
+        a |> should equal 12.345
+        $"{a}" |> should equal "12.34500"
+        let b = "5" |> FValue.From
+        b |> should equal 5
+        $"{b}" |> should equal "5"
+
+        let c = (a :> Value).Add b
+        (c :?> FValue).Value |> should equal 17.345
+        $"{c}" |> should equal "17.34500"

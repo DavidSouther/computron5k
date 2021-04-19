@@ -52,6 +52,13 @@ type Tree<'T when 'T : equality> =
 
     static member Leaf (t: 'T) = Tree.Node (t, List.Empty)
 
+    static member BinOp (tree: Tree<'T>) =
+        let (Node(_, c)) = tree
+        match c with
+        | (Node(lhs, _)) :: (Node(rhs, _)) :: _ -> Some (lhs, rhs)
+        | _ :: _ -> None
+        | [] -> None
+
     static member ToSExpression (tree: Tree<'T>) =
         match tree with
         | Node (t, []) -> t.ToString()
@@ -75,12 +82,10 @@ type Transformer<'T when 'T: equality>
     let outAction = defaultArg outAction0 id
     member this.Transform (tree: Tree<'T>) =
         let tree = inAction tree
-        let tree =
-            match tree with
-            | Node (t, c) ->
-                let c2 = c |> List.map(fun t -> this.Transform(t))
-                let sameChildren = List.forall2 LanguagePrimitives.PhysicalEquality c c2
-                if sameChildren then transform(tree) else transform(Node(t, c2))
+        let (Node(t, c)) = tree
+        let c2 = c |> List.map this.Transform
+        let sameChildren = List.forall2 LanguagePrimitives.PhysicalEquality c c2
+        let tree = if sameChildren then transform(tree) else transform(Node(t, c2))
         outAction tree
 
 module TreeErrors =
@@ -110,4 +115,3 @@ module TreeErrors =
         | errs ->
             let errs = errs |> String.concat "\n\t"
             $"Err: {t.Token.Value}@{t.Token.Position} ::\n\t{errs}" :: errors
-
