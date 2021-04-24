@@ -2,127 +2,127 @@
 
 ## Compiler
 
-	AddFile(Path)
-	AddFolder(Path, Extensions)
+    AddFile(Path)
+    AddFolder(Path, Extensions)
 
-	Fontend
-		scanner() -> ScannerFactory()
-		parser() -> ParserFactory()
+    Fontend
+        scanner() -> ScannerFactory()
+        parser() -> ParserFactory()
 
-	PassManager
-		registerASTPass();
-		registerIRPass();
+    PassManager
+        registerASTPass();
+        registerIRPass();
 
-	Backend
-		target() -> ArchFactory()	
+    Backend
+        target() -> ArchFactory()    
 
-	SymbolTable
-		register(Symbol, ...)
-		lookup(...)
+    SymbolTable
+        register(Symbol, ...)
+        lookup(...)
 
-	SyntaxElement
-		Kind: string
-		
-	Symbol
-		Name
-		Declared
-		Initialized
-		Value
+    SyntaxElement
+        Kind: string
+        
+    Symbol
+        Name
+        Declared
+        Initialized
+        Value
 
-	Value
-		Type
-		Value
+    Value
+        Type
+        Value
 
 ### Front end
 
-	FrontendError
-		Message: String
-		Token: Token(type = ErrorToken)
+    FrontendError
+        Message: String
+        Token: Token(type = ErrorToken)
 
 #### Scanner
 
-	RegexStr:
-		a literal
-		a? zero or one
-		a* zero or more
-		a+ one or more
-		a|b Alternate
-		[a-z] range
-		(abc) grouping
+    RegexStr:
+        a literal
+        a? zero or one
+        a* zero or more
+        a+ one or more
+        a|b Alternate
+        [a-z] range
+        (abc) grouping
 
-	Scanner
-		Register (RegexStr, TokenType)
+    Scanner
+        Register (RegexStr, TokenType)
 
-	Token 
-		Type: TokenType 
-		Value: String 
-		Position: (file, line, column)
+    Token 
+        Type: TokenType 
+        Value: String 
+        Position: (file, line, column)
 
-	RegexTokenType: TokenType
-		pattern: String
+    RegexTokenType: TokenType
+        pattern: String
 
-	TokenStream
-		+from(file: System.IO.Path) -> TokenStream;
-		+from(source: String, file: String) -> TokenStream;
-		peek(): Token;
-		advance();
+    TokenStream
+        +from(file: System.IO.Path) -> TokenStream;
+        +from(source: String, file: String) -> TokenStream;
+        peek(): Token;
+        advance();
 
 #### Parser
-	
-	ParserFactory
-		Operators: token, bindingPower, leftAction, rightAction
-		Statements: List<Value|Kind|BP>
-		parse TokenStream -> Tree<Token>
+    
+    ParserFactory
+        Operators: token, bindingPower, leftAction, rightAction
+        Statements: List<Value|Kind|BP>
+        parse TokenStream -> Tree<Token>
 
 ### AST/IR
-	Tree<'T>: 'T * List<Tree<'T>>
-	
-	// A depth first transformer which reuses structure as
-	// much as possible when the transform function does
-	// not modify the node.
-	Transformer (Tree<'T> -> Tree<'T>)
-		member Transform: Tree<'T> -> Tree<'T>
+    Tree<'T>: 'T * List<Tree<'T>>
+    
+    // A depth first transformer which reuses structure as
+    // much as possible when the transform function does
+    // not modify the node.
+    Transformer (Tree<'T> -> Tree<'T>)
+        member Transform: Tree<'T> -> Tree<'T>
 
-	SyntaxElement
-		static productions: List<Production>
-		productions[] // the parse tree
-		children // the AST
-	Production
-		Matcher // Something that can be reduced to a graph edge
-		SyntaxElement
-	OptionalProduction: Production (Production)
-	OneofProduction: Production (List<Production>)
-	RepeatedProduction: Production (Production)
-	ExpressionProduction: Production (Set<Operator>)
-	Operator
-		symbol: string
-		precedence: number > 0
-		fix: Prefix|Infix|Postfix
-		arity: Unary|Binary
-	InOperator
-		fix: Infix
-		arity: Binary
-	PrefixOperator
-		fix: Prefix
-		arity: Unary
-	PostfixOperator
-		fix: Postfix
-		arity: Unary
+    SyntaxElement
+        static productions: List<Production>
+        productions[] // the parse tree
+        children // the AST
+    Production
+        Matcher // Something that can be reduced to a graph edge
+        SyntaxElement
+    OptionalProduction: Production (Production)
+    OneofProduction: Production (List<Production>)
+    RepeatedProduction: Production (Production)
+    ExpressionProduction: Production (Set<Operator>)
+    Operator
+        symbol: string
+        precedence: number > 0
+        fix: Prefix|Infix|Postfix
+        arity: Unary|Binary
+    InOperator
+        fix: Infix
+        arity: Binary
+    PrefixOperator
+        fix: Prefix
+        arity: Unary
+    PostfixOperator
+        fix: Postfix
+        arity: Unary
 
-	Tree<T> T, Children
-	AST = Tree<SyntaxElement>
-	IR = Tree<IRElement>
-	IRList = List<IRElement>
+    Tree<T> T, Children
+    AST = Tree<SyntaxElement>
+    IR = Tree<IRElement>
+    IRList = List<IRElement>
 
-	// A 
-	ASTPass:
-		dependsOn: List<ASTPass>
-		transform: Tree -> Tree 
+    // A 
+    ASTPass:
+        dependsOn: List<ASTPass>
+        transform: Tree -> Tree 
 
 ### Backend
 
-	TargetPlatform:
-		codegen(IRList)
+    TargetPlatform:
+        codegen(IRList)
 
 ## Languages
 
@@ -136,7 +136,7 @@
     Statement > id "=" Expression
               | "p" id
     Expression: Binop(+- 10 left)
-			id | value
+            id | value
     id = [a-eghj-oq-z]
     value = (\d+|0)(.\d+)?
 
@@ -170,9 +170,9 @@
     VariableDeclaration > "var" id TypeAnnotation? ":=" Expression
     TypeAnnotation > ":" type-id
     Type > type-id
-    	 | "{" TypeFields "}"
-	 | "array" "of" type-id
-	 | "class" ("extends" type-id)? "{" ClassFields "}"
+         | "{" TypeFields "}"
+     | "array" "of" type-id
+     | "class" ("extends" type-id)? "{" ClassFields "}"
 
     Expression > "nil"
                | integer
@@ -202,7 +202,7 @@
                >= <= = <> < > Left 30
                & Left 20
                | Left 10
-	       := right 5
+           := right 5
 
 ### Jack
 
