@@ -67,12 +67,63 @@
         peek(): Token;
         advance();
 
+    Literal
+    Identifier
+    Value
+    Comment
+    Whitespace
+
 #### Parser
     
     ParserFactory
         Operators: token, bindingPower, leftAction, rightAction
-        Statements: List<Value|Kind|BP>
+        Statements: List<Production>
         parse TokenStream -> Tree<Token>
+
+    SyntaxElement
+        static productions: List<Production>
+        tokens: List<Token|SyntaxElement> // the complete parse tree
+        children: List<SyntaxElement> // the AST
+    Production
+        first: Matcher // Something that can be reduced to a graph edge?
+        follow: List<SyntaxElement>
+    Statment: Production (List<string|TokenType|Production>)
+        A statement takes a list of strings, token types, & productions, and
+        creates a syntax element with children from the Productions. string
+        and token values are treated as literal expected tokens, Productions
+        are treated as expected next parse types. Literal tokens are stored
+        in the parse tree, only SyntaxElements are included in the children.
+    Optional: Production (Production)
+        A production that may be matched, but will have an empty Follow if the
+        token does not meet the First set.
+    Oneof: Production (List<Production>)
+        A production that will match the first Production in the list, or will
+        error if no productions match. By implication, the first Optional in a
+        Oneof will match. Therefore, an Optional should only be in the last
+        position of a Oneof.
+    Repeated: Production (Production, atLeastOnce: boolean = true)
+        The production can me matched any number of times. If atLeastOnce is
+        true, one instance must be matched. Otherwise, it is allowed to match
+        zero times.
+    OneOrMore (Production) = Repeated (Production, false)
+    Expression: Production (Set<TokenType>, Set<Operator>)
+        Expression consumes terminals and operators to build a
+        complete expression. The expression hierarchy is determined by the set
+        of operators.
+    Operator
+        symbol: string
+        precedence: number > 0
+        fix: Prefix|Infix|Postfix
+        arity: Unary|Binary
+    InfixOperator
+        fix: Infix
+        arity: Binary
+    PrefixOperator
+        fix: Prefix
+        arity: Unary
+    PostfixOperator
+        fix: Postfix
+        arity: Unary
 
 ### AST/IR
     Tree<'T>: 'T * List<Tree<'T>>
@@ -83,36 +134,49 @@
     Transformer (Tree<'T> -> Tree<'T>)
         member Transform: Tree<'T> -> Tree<'T>
 
-    SyntaxElement
-        static productions: List<Production>
-        productions[] // the parse tree
-        children // the AST
-    Production
-        Matcher // Something that can be reduced to a graph edge
-        SyntaxElement
-    OptionalProduction: Production (Production)
-    OneofProduction: Production (List<Production>)
-    RepeatedProduction: Production (Production)
-    ExpressionProduction: Production (Set<Operator>)
-    Operator
-        symbol: string
-        precedence: number > 0
-        fix: Prefix|Infix|Postfix
-        arity: Unary|Binary
-    InOperator
-        fix: Infix
-        arity: Binary
-    PrefixOperator
-        fix: Prefix
-        arity: Unary
-    PostfixOperator
-        fix: Postfix
-        arity: Unary
+    IRElement
+        Optional<SyntaxElement>
+
+    Value
+        Label|Mem|Temp|Const
+    Operation
+        Operator, Expression, Expression
+    Call
+        label: Expression
+        arguments: List<Value>
+    ExpressionSequence
+        sequence: List<Statement>
+        result: Expression
+
+    Expression: Value | Operation | Call | ExpressionSequence
+
+    Move
+        target: Value.Mem | Value.Temp 
+        source: Expression
+    Label
+        name: string
+    Jump
+        target: Value.Label|Expression
+        locations: List<Label>
+    ConditionalJump
+        condition: Comparator
+        a: Expression
+        b: Expression
+        trueTarget: Value.Label
+        falseTarget: Value.Label
+    Sequence
+        head: Statment
+        tail: Statment
+     
+    Statement: Expression | Move | Label | Jump | ConditionalJump | Sequence
+
+    Operator: PLUS | MINUS | MULTIPLY | DIVIDE | AND | OR | LSHIFT | RSHIFT | ARSHIFT | XOR
+    Comparator: EQUAL | NOT_EQUAL | LESS_THAN | GREATER_THAN | LESS_THAN_EQUAL | GREATER_THAN_EQUAL | 
+				UNSIGNED_LESS_THAN | UNSIGNED_GREATER_THAN | UNSIGNED_LESS_THAN_EQUAL | UNSIGNED_GREATER_THAN_EQUAL
 
     Tree<T> T, Children
     AST = Tree<SyntaxElement>
     IR = Tree<IRElement>
-    IRList = List<IRElement>
 
     // A 
     ASTPass:
@@ -140,6 +204,28 @@
     id = [a-eghj-oq-z]
     value = (\d+|0)(.\d+)?
 
+    ///
+
+    Identifier = TokenType "[a-eghj-oq-z]"
+    Value = TokenType "(\d+|0)(.\d+)?"
+    Expression = Operator(
+        [Identifier; Value]
+		[
+			InfixOperator("+", 10),
+			InfixOperator("-", 10),
+		]
+	)
+    Statement = Oneof([
+        Production.Statement [Identifier; "="; Expression]
+        Production.Statement ["p"; Identifier]
+    ])
+    Declaration = OneOf([
+        Production.Statement ["i"; Identifier]
+        Production.Statement ["f"; Identifier]
+    ])
+
+    Program = Repeated(OneOf([Statement; Declaration])
+
 ### Lisp
 
     Program > SExpression+
@@ -149,6 +235,24 @@
     id = [a-zA-Z'][^()"]*
     value = (\d+|0)(.\d+)?
           = "[^"]*"
+
+    id = [a-zA-Z'][^()"]*
+    value = (\d+|0)(.\d+)?
+          = "[^"]*"
+
+    /// 
+
+    Identifier = """[a-zA-Z'][^()"]*"""
+    Value = "(\d+|0)(.\d+)"|""""[^"]*""""
+    Atom = OneOf [
+        Identifier
+        Value
+    ]
+    SExpression = OneOf [
+        Atom
+        Statement ["("; SExpression ;")"
+	]
+    Program = OneOrMore [SExpression]
 
 ### Tiger 
 
