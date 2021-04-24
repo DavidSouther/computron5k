@@ -15,18 +15,19 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "ac", "ac\ac.fsproj", "{039D
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{4DE19984-8C69-4D87-AB50-116573C608C4}"
 	ProjectSection(SolutionItems) = preProject
+		acProject1.txt = acProject1.txt
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ac.Test", "ac.Test\ac.Test.fsproj", "{167528CA-4D4A-4D74-9271-07E2BA5500BA}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "ac.Test", "ac.Test\ac.Test.fsproj", "{167528CA-4D4A-4D74-9271-07E2BA5500BA}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Analysis", "Analysis\Analysis.fsproj", "{5266A460-AD18-43D3-A2DE-952EA1A562A1}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Analysis", "Analysis\Analysis.fsproj", "{5266A460-AD18-43D3-A2DE-952EA1A562A1}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Analysis.Test", "Analysis.Test\Analysis.Test.fsproj", "{5EB3937D-30DD-42B6-B3E9-75AC6317B0F2}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Analysis.Test", "Analysis.Test\Analysis.Test.fsproj", "{5EB3937D-30DD-42B6-B3E9-75AC6317B0F2}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Jack", "Jack\Jack.fsproj", "{CDB36836-E6B4-4E73-A447-53FD2AE73BE8}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Jack", "Jack\Jack.fsproj", "{CDB36836-E6B4-4E73-A447-53FD2AE73BE8}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Jack.Test", "Jack.Test\Jack.Test.fsproj", "{86DEED4D-84C9-4856-B241-F3CA654A6227}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Jack.Test", "Jack.Test\Jack.Test.fsproj", "{86DEED4D-84C9-4856-B241-F3CA654A6227}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -58,12 +58,12 @@ let DeclPass: Transformer<TreeData> =
         match declare with
         | Ok(s) ->
             scope <- s :: scope.Tail
-            tree
+            Tree.Node({d with Data = d.Data.Add("variable", c.Head)}, [])
         | Error(why) -> 
             TreeErrors.Add tree $"Failed to declare in scope: {why}"
     let checkDeclaration (tree: Tree<TreeData>) =
         match tree with
-        | Node(d, []) -> 
+        | Node(d, []) when d.Token.Type.Name = "Identifier" -> 
             // Check that d.Token.Value has been declared
             match scope.Head.Lookup d.Token.Value with
             | Some symbol ->
@@ -72,21 +72,23 @@ let DeclPass: Transformer<TreeData> =
             | None ->
                 let tree = Tree.Leaf({d with Data = d.Data.Add("type", "i")})
                 TreeErrors.Add tree $"Undeclared variable: {d.Token.Value}"
-        | Node(d, c) ->
-            if d.Token.Type.Name = "Operator"
+        | Node(d, c) when d.Token.Type.Name = "Operator" ->
+            if d.Token.Value = "i" || d.Token.Value = "f"
             then
-                if d.Token.Value = "i" || d.Token.Value = "f"
-                then
-                    Tree.Node({d with Data = d.Data.Add("type", d.Token.Value)}, c)
-                else
-                    let allint =
-                        c
-                        |> List.map(fun (Node(d, _)) -> d.Data.["type"] :?> string)
-                        |> List.forall(fun t -> t = "i")
-                    if allint
-                    then Tree.Node({d with Data = d.Data.Add("type", "i")}, c)
-                    else Tree.Node({d with Data = d.Data.Add("type", "f")}, c)
-            else tree
+                Tree.Node({d with Data = d.Data.Add("type", d.Token.Value)}, c)
+            else
+                let allint =
+                    c
+                    |> List.map(fun (Node(d, _)) -> d.Data.["type"] :?> string)
+                    |> List.forall(fun t -> t = "i")
+                if allint
+                then Tree.Node({d with Data = d.Data.Add("type", "i")}, c)
+                else Tree.Node({d with Data = d.Data.Add("type", "f")}, c)
+        | Node(d, c) when d.Token.Type.Name = "Value" ->
+            if d.Token.Value.Contains('.')
+            then Tree.Node({d with Data = d.Data.Add("type", "f")}, c)
+            else Tree.Node({d with Data = d.Data.Add("type", "i")}, c)
+        | _ -> tree
 
     let checkScope (tree: Tree<TreeData>) =
         let (Node(d, _)) = tree
@@ -228,10 +230,11 @@ let InterpretPass: Transformer<TreeData> =
                     let value = symbol.Data.["value"]
                     Tree.Node({d with Data = d.Data.Add("value", value)}, c)
                 else
-                    // TreeErrors.Add tree $"READ uninitialized variable {id}"
-                    // TODO suppress above error when in declaration
-                    tree
-            | None -> TreeErrors.Add tree $"READ undeclared variable {id}"
+                    TreeErrors.Add tree $"READ uninitialized variable {id}"
+            | None -> 
+                // TreeErrors.Add tree $"READ undeclared variable {id}"
+                // Already checked in DeclPass
+                tree
         | _ -> tree
 
     Transformer(interpret, pushScope, popScope)

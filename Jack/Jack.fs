@@ -4,29 +4,19 @@ open AST
 open Scanner
 open Parser
 
-let keywords: Set<string> = Set.ofSeq [
-    "class"
-    "constructor"
-    "function"
-    "method"
-    "static"
-    "field"
-    "var"
-    "int"
-    "char"
-    "boolean"
-    "void"
-    "true"
-    "false"
-    "null"
-    "this"
-    "let"
-    "do"
-    "if"
-    "else"
-    "while"
-    "return"
-]
+type Statement () = class end
+type Expression () = class end
+type Option<'T> = class end
+type Identifier = class end
+
+
+(*
+let LetStatement = Statment(["let"; Identifier; "="; Expression])
+
+let Block = ["{"; [Statement]; "}" ]
+*)
+
+// let IfStatement = ["if"; Expression; "then"; Block; Option(["else"; Block])]
 
 let ifStatement (parser: Parser) (token: Token) =
     let expression = parser.expression(1)
