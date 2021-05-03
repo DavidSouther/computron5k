@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Production.fs" />
     <Compile Include="Parser.fs" />
     <Compile Include="Scanner.fs" />
   </ItemGroup>

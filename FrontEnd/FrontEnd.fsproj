@@ -8,6 +8,7 @@
   <ItemGroup>
     <Compile Include="Scanner.fs" />
     <Compile Include="Parser.fs" />
+    <Compile Include="Production.fs" />
   </ItemGroup>
 
   <ItemGroup>

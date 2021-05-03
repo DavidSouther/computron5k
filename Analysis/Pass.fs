@@ -14,27 +14,28 @@ type PassManager (?passes0: List<Transformer<TreeData>>) =
         tree
 
 module Passes =
+    let openScope (d: TreeData) =
+        d.Token.Value = "{" || d.Token.Type.Name = "ROOT"
     let ScanErrors: Transformer<TreeData> =
         let scanErrors (tree: Tree<TreeData>): Tree<TreeData> =
-            let (Node(d, c)) = tree
-            if d.Token.Type.Name = "Unknown"
-            then AST.TreeErrors.Add tree $"Unknown token type: {d.Token.Value}"
-            else tree
+            match tree with
+            | Node(d, c) when d.Token.Type.Name = "Unknown" ->
+                tree |> AST.TreeErrors.Add $"Unknown token type: {d.Token.Value}"
+            | _ -> tree
         Transformer scanErrors
     let ScopePass: Transformer<TreeData> =
         let mutable scopes = [SymbolTable.Empty]
         let pushScope (tree: Tree<TreeData>) =
-            let (Node(d, c)) = tree
-            if d.Token.Value = "{" || d.Token.Type.Name = "ROOT"
-            then
+            match tree with
+            | Node(d, c) when openScope d ->
                 let scope = scopes.Head.New ()
                 scopes <- scope :: scopes
                 Tree.Node({d with Data = d.Data.Add("scope", scope)}, c)
-            else tree
+            | _ -> tree
         let popScope (tree: Tree<TreeData>) =
-            let (Node(d, _)) = tree
-            if d.Token.Value = "{" || d.Token.Type.Name = "ROOT"
-            then scopes <- scopes.Tail
+            scopes <- match tree with
+                      | Node(d, _) when openScope d-> scopes.Tail
+                      | _ -> scopes
             tree
         Transformer(id, inAction0=pushScope, outAction0=popScope)
 

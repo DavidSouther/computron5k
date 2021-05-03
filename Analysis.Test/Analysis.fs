@@ -11,6 +11,6 @@ type TestSymbolTable () =
     [<Test>]
     member _.Empty () =
         let scope = SymbolTable.Empty
-        scope.Get "a" |> should equal None
+        scope.Lookup "a" |> should equal None
 
     member _.Declare () = ()

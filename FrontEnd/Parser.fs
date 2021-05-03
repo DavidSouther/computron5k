@@ -63,16 +63,21 @@ type BinaryOperator
         member t.leftAction (parser: Parser) (left: Tree<TreeData>) (token: Token) =
             let right = parser.expression nextBindingPower
             if close.IsSome then parser.expect close.Value |> ignore
-            let (Node (rData, rChildren)) = right 
-            let (Node (lData, lChildren)) = left
-            if continuation &&
-                token.Value = t.Token &&
-                lData.Token.Value = token.Value
-            then
-                if rData.Token.Value = token.Value
-                then TreeNode token (lChildren @ rChildren)
-                else TreeNode token (lChildren @ [right])
-            else TreeNode token [left; right]
+            let simple = TreeNode token [left; right]
+            match left with
+            | Node (lData, lChildren) ->
+                if continuation &&
+                    token.Value = t.Token &&
+                    lData.Token.Value = token.Value
+                then
+                    match right with 
+                    | Node (rData, rChildren) ->
+                        if rData.Token.Value = token.Value
+                        then TreeNode token (lChildren @ rChildren)
+                        else TreeNode token (lChildren @ [right])
+                    | empty -> simple
+                else simple
+            | Empty  -> simple
 
 let RightBinaryOperator (token: string, bindingPower: int) =
     BinaryOperator(token, bindingPower, false)
@@ -125,10 +130,10 @@ type GroupOperator (token: string, close: string, ?scope0: bool) =
             let error = errorToken($"Unexpected {token.Value} in infix position", token.Position)
             TreeNode error [left]
 
-type ParserFactory (scannerFactory: ScannerFactory, operatorMap: Map<string, Operator>, ?toSkip0: Set<string>) =
+type ParserFactory (operatorMap: Map<string, Operator>, identifiers: TokenType, values: TokenType, ?toSkip0: Set<string>) =
     let toSkip = defaultArg toSkip0 defaultToSkip
 
-    let doParse (scanner: Scanner): Tree<TreeData> = 
+    member _.Parse (scanner: Scanner): Tree<TreeData> = 
         let shouldSkip () =
             match scanner.Next with
             | None -> true
@@ -145,6 +150,15 @@ type ParserFactory (scannerFactory: ScannerFactory, operatorMap: Map<string, Ope
             let peek = Peek()
             scanner.Advance() |> ignore
             peek
+
+        let rootToken = 
+            { Token.Value = "::expression::"
+              Type =
+                { TokenType.Name = "::expression::"
+                  Priority = 0
+                  ToMatch = []
+                  Error = false}
+              Position = scanner.Next.Value.Position; }
 
         let mutable parser: Parser =
             { new Parser with
@@ -192,55 +206,47 @@ type ParserFactory (scannerFactory: ScannerFactory, operatorMap: Map<string, Ope
                 Advance ()
                 }
 
-        let rootToken = 
-            { Token.Value = $"program:{scanner.File}"
-              Type =
-                { TokenType.Name = "ROOT"
-                  Priority = 0
-                  ToMatch = []
-                  Error = false}
-              Position =
-                { Position.File = scanner.File
-                  Line = 1
-                  Column = 1
-                  Index = 0 }}
 
         let isEOF (next: Token) =
             next.Type.Name = BaseTokenTypes.EOF.Name
 
+        let accepting (token: Token) =
+            ()
+            // TODO 
+
         // Parse until the scanner is empty
         let mutable expressions: List<Tree<TreeData>> = List.empty
-        while not(isEOF(Peek())) do
+        while accepting(Peek()) do
             expressions <- expressions @ [parser.expression 0]
         TreeNode rootToken expressions
-        
-    member _.Parse (contents, file) =
-        doParse(scannerFactory.Scan(contents, file))
-
-    member _.ParseFile (path: string) =
-        doParse(scannerFactory.From(path))
 
     static member For
         (
             operators: List<Operator>,
-            ?keywords0: Keywords,
             ?identifiers0: Identifiers,
-            ?values0: Values,
-            ?comments0: Comments,
-            ?whitespace0: Whitespace
+            ?values0: Values
          ) =
             let identifiers = defaultArg identifiers0 BaseTokenTypes.Identifier
             let values = defaultArg values0 BaseTokenTypes.Value
+
+            (*
+            ?keywords0: Keywords,
+            ?comments0: Comments,
+            ?whitespace0: Whitespace
             let comments = defaultArg comments0 BaseTokenTypes.Comment
             let whitespace = defaultArg whitespace0 BaseTokenTypes.Whitespace
 
-            let (operatorTokenType, operatorMap) = makeOperatorParts operators
-            let mutable tokenTypes = [operatorTokenType; identifiers; values; comments; whitespace; BaseTokenTypes.Error; BaseTokenTypes.EOF]
-
+            comments; whitespace; BaseTokenTypes.Error; BaseTokenTypes.EOF
             let keywords = defaultArg keywords0 Set.empty
             if not keywords.IsEmpty then
                 let keywords = TokenType.Literal("Keywords", 80, keywords |> Set.toList)
                 tokenTypes <- tokenTypes @ [keywords]
                 
+            *)
+
+
+            let (operatorTokenType, operatorMap) = makeOperatorParts operators
+            let mutable tokenTypes = [operatorTokenType; identifiers; values; ]
+
             let scanner = ScannerFactory tokenTypes
             ParserFactory(scanner, operatorMap)

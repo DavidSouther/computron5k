@@ -1,28 +1,54 @@
 # cpsc5400 Hand Rolled parser
 
 ## Compiler
+    Stream<T> = (Seq<T>)
+        peek(): T  // IEnumerator.Current
+        next(): Stream<T> // IEnumerator.MoveNext()
 
-    AddFile(Path)
-    AddFolder(Path, Extensions)
+    Compiler Frontend * PassManager * Backend * SymbolTable
+		AddFile(Path)
+		AddFolder(Path, Extensions)
 
-    Fontend
+    Fontend ScannerFactory * ParserFactory
         scanner() -> ScannerFactory()
         parser() -> ParserFactory()
 
+    ScannerFactory
+        scanner() -> Scanner
+    ParserFactory
+        parser() -> Parser
+    Scanner
+		// Iterate the tokens in the stream
+        scan(contents, filename) -> Stream<Token> 
+    Parser
+		// In-order bottom-up iteration of the syntax tree
+        parse(contents, filename) -> Stream<SyntaxElement> 
+
     PassManager
-        registerASTPass();
-        registerIRPass();
+        registerASTPass ASTTransformer
+        astToIr ASTToIRTransformer
+        registerIRPass IRTransformer
+
+    ASTTransformer
+        // Transforms an AST+scope into AST+scope with type checking
+        // information and errors
+
+    IRTranformer
+        // Transforms an IR Tree into an IR Tree with control flow analysis,
+        // optimizations, and register selection based on Backend's register
+        // tables.
+
+    ASTToIRTransformer
+        // Transforms an AST into an IR tree.
 
     Backend
+        // Instruction selection and call frames
         target() -> ArchFactory()    
 
     SymbolTable
         register(Symbol, ...)
         lookup(...)
 
-    SyntaxElement
-        Kind: string
-        
     Symbol
         Name
         Declared
@@ -74,38 +100,50 @@
     Whitespace
 
 #### Parser
+
+    Matcher:
+        matches(token: Token)
     
     ParserFactory
-        Operators: token, bindingPower, leftAction, rightAction
         Statements: List<Production>
-        parse TokenStream -> Tree<Token>
+        parse TokenStream -> Sequence<AST>
 
-    SyntaxElement
-        static productions: List<Production>
+    SyntaxElement: TreeData 
         tokens: List<Token|SyntaxElement> // the complete parse tree
-        children: List<SyntaxElement> // the AST
+        children: List<SyntaxElement> // the AST children
+
     Production
-        first: Matcher // Something that can be reduced to a graph edge?
-        follow: List<SyntaxElement>
-    Statment: Production (List<string|TokenType|Production>)
+        Matches: Token -> bool // Functional matching
+        Consume: (Token, Seq<Token>) -> (Seq<Token>, Tree<TreeData>)
+
+    ConstProduction: Production
+        Value: string
+
+    SimpleProduction: Production
+        Matcher: TokenType // Regex matching
+
+    Statement: Production (List<Production>)
         A statement takes a list of strings, token types, & productions, and
         creates a syntax element with children from the Productions. string
         and token values are treated as literal expected tokens, Productions
         are treated as expected next parse types. Literal tokens are stored
         in the parse tree, only SyntaxElements are included in the children.
+
     Optional: Production (Production)
         A production that may be matched, but will have an empty Follow if the
         token does not meet the First set.
+
     Oneof: Production (List<Production>)
         A production that will match the first Production in the list, or will
         error if no productions match. By implication, the first Optional in a
         Oneof will match. Therefore, an Optional should only be in the last
         position of a Oneof.
+
     Repeated: Production (Production, atLeastOnce: boolean = true)
         The production can me matched any number of times. If atLeastOnce is
         true, one instance must be matched. Otherwise, it is allowed to match
         zero times.
-    OneOrMore (Production) = Repeated (Production, false)
+
     Expression: Production (Set<TokenType>, Set<Operator>)
         Expression consumes terminals and operators to build a
         complete expression. The expression hierarchy is determined by the set

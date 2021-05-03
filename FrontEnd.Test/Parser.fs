@@ -4,7 +4,6 @@ open FsUnit
 open NUnit.Framework
 
 open AST
-open Scanner
 open Parser
 
 [<TestFixture>]
@@ -39,6 +38,7 @@ type TestParser () =
         match tree with
         | Node (t, []) -> tree
         | Node (t, c) -> c.Head
+        | Empty -> Empty
         |> Tree.ToSExpression
 
     [<Test>]
@@ -68,6 +68,7 @@ type TestParser () =
             match tree with
             | Node (t, []) -> tree
             | Node (t, c) -> c.Head
+            | Empty -> Empty
             |> Tree.ToSExpression
         parse "a; b; c" |> should equal "(; a b c)"
         parse "a = b; c" |> should equal "(; (= a b) c)"

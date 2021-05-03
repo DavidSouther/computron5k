@@ -3,64 +3,62 @@
 open AST
 open Parser
 open Scanner
+open Production
 open Analysis
 
-let operatorTokens = TokenType.Literal("Operator", 20, ["+"; "-"; "="; "i"; "f"; "p"])
 let identifiers = TokenType.From("Identifier", 20, ["[a-eghj-oq-z]"])
-let whitespace = BaseTokenTypes.Whitespace
-
-let scanner = ScannerFactory [operatorTokens; identifiers; BaseTokenTypes.Value; BaseTokenTypes.Whitespace; BaseTokenTypes.EOF;]
-
-let decl (parser: Parser) (token: Token) =
-    let next = parser.next()
-    match next.Type.Name with
-    | "Identifier" -> TreeNode token [TreeLeaf(next)]
-    | _ -> TreeNode token [TreeErrors.Add(TreeLeaf(next))($"Expected Identifier, got {next.ToRepl()}")]
+let declaration = TokenType.Literal("Declaration", 20, ["i"; "f"])
 
 let operators: List<Operator> = [
-    RightOperator("f", -5, decl)
-    RightOperator("i", -5, decl)
-    RightOperator("p", -5, decl)
     BinaryOperator("*", 30)
     BinaryOperator("/", 30)
     BinaryOperator("+", 20)
     MixedOperator("-", 20, 40)
-    RightBinaryOperator("=", 10)
 ]
 
 let parser = ParserFactory.For(operators, identifiers0=identifiers)
 
+let Expression = ExpresionProduction operators
+let Identifier = SimpleProduction identifiers
+let Assignment = StatementProduction("Assignment", [Identifier; ConstProduction "="; Expression])
+let Declaration = StatementProduction("Declaration", [SimpleProduction declaration; Identifier])
+let Print = StatementProduction("Print", [ConstProduction "p"; Identifier])
+let Program = RepeatedProduction("Program", OneOfProduction([Declaration; Assignment; Print]))
+
 let isEOF (next: Option<Token>) =
     next.IsSome && next.Value.Type.Name = BaseTokenTypes.EOF.Name
-
 
 let DeclPass: Transformer<TreeData> =
     let mutable scope = [SymbolTable.Empty]
     let pushScope (tree: Tree<TreeData>) =
         // When entering a block, update the current scope
-        let (Node(d, _)) = tree
-        if d.Data.ContainsKey "scope"
-        then scope <- d.Data.["scope"] :?> Scope :: scope
+        match tree with
+        | Node(d, _) when d.Data.ContainsKey "scope" ->
+             scope <- d.Data.["scope"] :?> Scope :: scope
+        | _ -> ()
         tree
     let popScope (tree: Tree<TreeData>) =
         // When exiting a block, update the node with any updates
-        let (Node(d, c)) = tree
-        if d.Data.ContainsKey "scope"
-        then
+        match tree with
+        | Node(d, c) when d.Data.ContainsKey "scope" ->
             let scope1 = scope.Head
             scope <- scope.Tail
             Tree.Node({d with Data = d.Data.Add("scope", scope1 :> obj)}, c)
-        else tree
+        | _ ->  tree
     let declare (tree: Tree<TreeData>) =
-        let (Node(d, c)) = tree
-        let (Node(v, _)) = c.Head
-        let declare = scope.Head.Declare(v.Token.Value, d.Token.Position, Some(Map.empty.Add("type", d.Token.Value :> obj)))
-        match declare with
-        | Ok(s) ->
-            scope <- s :: scope.Tail
-            Tree.Node({d with Data = d.Data.Add("variable", c.Head)}, [])
-        | Error(why) -> 
-            TreeErrors.Add tree $"Failed to declare in scope: {why}"
+        match tree with
+        | Node(d, c) ->
+            match c.Head with
+            | Node(v, _) ->
+                let declare = scope.Head.Declare(v.Token.Value, d.Token.Position, Some(Map.empty.Add("type", d.Token.Value :> obj)))
+                match declare with
+                | Ok(s) ->
+                    scope <- s :: scope.Tail
+                    Tree.Node({d with Data = d.Data.Add("variable", c.Head)}, [])
+                | Error(why) -> 
+                    tree |> TreeErrors.Add $"Failed to declare in scope: {why}"
+            | Empty -> tree
+        | Empty -> tree
     let checkDeclaration (tree: Tree<TreeData>) =
         match tree with
         | Node(d, []) when d.Token.Type.Name = "Identifier" -> 
@@ -71,7 +69,7 @@ let DeclPass: Transformer<TreeData> =
                 Tree.Leaf({d with Data = d.Data.Add("type", symbolType)})
             | None ->
                 let tree = Tree.Leaf({d with Data = d.Data.Add("type", "i")})
-                TreeErrors.Add tree $"Undeclared variable: {d.Token.Value}"
+                tree |> TreeErrors.Add $"Undeclared variable: {d.Token.Value}"
         | Node(d, c) when d.Token.Type.Name = "Operator" ->
             if d.Token.Value = "i" || d.Token.Value = "f"
             then
@@ -145,97 +143,102 @@ let getValue (tree: TreeData): Value =
     :?> Value
 
 let setValue (tree: Tree<TreeData>) (value: Value): Tree<TreeData> =
-    let (Node(d, c)) = tree
-    Tree.Node({d with Data = d.Data.Add("value", value)}, c)
+    match tree with
+    | Node(d, c) -> Tree.Node({d with Data = d.Data.Add("value", value)}, c)
+    | _ -> tree
 
 let InterpretPass: Transformer<TreeData> =
     let mutable scope = SymbolTable.Empty
     let mutable scopes = [scope]
     let pushScope (tree: Tree<TreeData>) =
         // When entering a block, update the current scope
-        let (Node(d, _)) = tree
-        if d.Data.ContainsKey "scope"
-        then
+        match tree with
+        | Node(d, _) when d.Data.ContainsKey "scope" ->
             scope <- d.Data.["scope"] :?> Scope
             scopes <- scope :: scopes
+        | _ -> ()
         tree
 
     let popScope (tree: Tree<TreeData>) =
         // When exiting a block, update the node with any updates
-        let (Node(d, c)) = tree
-        if d.Data.ContainsKey "scope"
-        then
+        match tree with
+        | Node(d, c) when d.Data.ContainsKey "scope" ->
             let scope1 = scope
             scopes <- scopes.Tail
             scope <- scopes.Head
             Tree.Node({d with Data = d.Data.Add("scope", scope :> obj)}, c)
-        else tree
+        | _ -> tree
 
     let interpret (tree: Tree<TreeData>) =
-        let (Node(d, c)) = tree
-        match d.Token.Type.Name with
-        | "Value" ->
-            if d.Token.Value.Contains "."
-            then FValue.From(d.Token.Value) :> Value
-            else IValue.From(d.Token.Value) :> Value
-            |> setValue tree 
-        | "Operator" ->
-            match d.Token.Value with
-            | "=" ->
-                match Tree.BinOp tree with
-                | Some (lhs, rhs) ->
-                    let id = lhs.Token.Value
-                    let value = 
-                        if rhs.Data.ContainsKey "value"
-                        then rhs.Data.["value"]
-                        else FValue.NaN :> obj
-                    match scope.Lookup id with
-                    | Some symbol ->
-                        scope <- scope.Set(id, {symbol with Data = symbol.Data.Add("value", value)})
-                        scopes <- scope :: scopes.Tail
-                        tree
+        match tree with
+        | Empty -> tree
+        | Node(d, c) ->
+            match d.Token.Type.Name with 
+            | "Value" ->
+                if d.Token.Value.Contains "."
+                then FValue.From(d.Token.Value) :> Value
+                else IValue.From(d.Token.Value) :> Value
+                |> setValue tree 
+            | "Operator" ->
+                match d.Token.Value with
+                | "=" ->
+                    match Tree.BinOp tree with
+                    | Some (lhs, rhs) ->
+                        let id = lhs.Token.Value
+                        let value = 
+                            if rhs.Data.ContainsKey "value"
+                            then rhs.Data.["value"]
+                            else FValue.NaN :> obj
+                        match scope.Lookup id with
+                        | Some symbol ->
+                            scope <- scope.Set(id, {symbol with Data = symbol.Data.Add("value", value)})
+                            scopes <- scope :: scopes.Tail
+                            tree
+                        | None ->
+                            let message = $"Assign to uninitialized variable {id}"
+                            tree |> TreeErrors.Add message
                     | None ->
-                        TreeErrors.Add tree $"Assign to uninitialized variable {id}"
-                | None ->
-                    TreeErrors.Add tree $"ASSIGN missing sides"
-            | "+" ->
-                match Tree.BinOp tree with
-                | Some (lhs, rhs) ->
-                    getValue(lhs).Add(getValue(rhs)) |> setValue tree
-                | None -> TreeErrors.Add tree $"ADD missing sides"
-            | "-" ->
-                match Tree.BinOp tree with
-                | Some (lhs, rhs) ->
-                    getValue(lhs).Sub(getValue(rhs)) |> setValue tree
-                | None -> TreeErrors.Add tree $"SUB missing sides"
-            | "p" ->
-                let (Node(id, _)) = c.Head 
-                let id = id.Token.Value
+                        tree |> TreeErrors.Add $"ASSIGN missing sides"
+                | "+" ->
+                    match Tree.BinOp tree with
+                    | Some (lhs, rhs) ->
+                        getValue(lhs).Add(getValue(rhs)) |> setValue tree
+                    | None -> tree |> TreeErrors.Add $"ADD missing sides"
+                | "-" ->
+                    match Tree.BinOp tree with
+                    | Some (lhs, rhs) ->
+                        getValue(lhs).Sub(getValue(rhs)) |> setValue tree
+                    | None -> tree |> TreeErrors.Add $"SUB missing sides"
+                | "p" ->
+                    match tree with
+                    | Node(id, _) ->
+                        let id = id.Token.Value
+                        match scope.Lookup id with
+                        | Some symbol ->
+                            if symbol.Data.ContainsKey "value"
+                            then
+                                let value = symbol.Data.["value"]
+                                Tree.Node({d with Data = d.Data.Add("out", $"p {id} = {value}")}, c)
+                            else
+                                tree |> TreeErrors.Add $"PRINT uninitialized variable {id}"
+                        | None -> tree |> TreeErrors.Add $"PRINT undeclared variable {id}"
+                    | Empty -> tree
+                | _ -> tree
+            | "Identifier" ->
+                let id = d.Token.Value
                 match scope.Lookup id with
                 | Some symbol ->
                     if symbol.Data.ContainsKey "value"
                     then
                         let value = symbol.Data.["value"]
-                        Tree.Node({d with Data = d.Data.Add("out", $"p {id} = {value}")}, c)
+                        Tree.Node({d with Data = d.Data.Add("value", value)}, c)
                     else
-                        TreeErrors.Add tree $"PRINT uninitialized variable {id}"
-                | None -> TreeErrors.Add tree $"PRINT undeclared variable {id}"
+                        tree |> TreeErrors.Add $"READ uninitialized variable {id}"
+                | None -> 
+                    // TreeErrors.Add tree $"READ undeclared variable {id}"
+                    // Already checked in DeclPass
+                    tree
             | _ -> tree
-        | "Identifier" ->
-            let id = d.Token.Value
-            match scope.Lookup id with
-            | Some symbol ->
-                if symbol.Data.ContainsKey "value"
-                then
-                    let value = symbol.Data.["value"]
-                    Tree.Node({d with Data = d.Data.Add("value", value)}, c)
-                else
-                    TreeErrors.Add tree $"READ uninitialized variable {id}"
-            | None -> 
-                // TreeErrors.Add tree $"READ undeclared variable {id}"
-                // Already checked in DeclPass
-                tree
-        | _ -> tree
 
     Transformer(interpret, pushScope, popScope)
 
