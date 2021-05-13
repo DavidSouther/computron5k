@@ -4,6 +4,7 @@ open AST
 open Parser
 open Scanner
 open Production
+open FrontEnd
 open Analysis
 
 let identifiers = TokenType.From("Identifier", 20, ["[a-eghj-oq-z]"])
@@ -16,14 +17,14 @@ let operators: List<Operator> = [
     MixedOperator("-", 20, 40)
 ]
 
-let parser = ParserFactory.For(operators, identifiers0=identifiers)
-
-let Expression = ExpresionProduction operators
+let Expression = ExpressionProduction(operators, identifiers)
 let Identifier = SimpleProduction identifiers
-let Assignment = StatementProduction("Assignment", [Identifier; ConstProduction "="; Expression])
+let Assignment = StatementProduction("Assignment", [Identifier; ConstProduction "="; Expression :> Production])
 let Declaration = StatementProduction("Declaration", [SimpleProduction declaration; Identifier])
 let Print = StatementProduction("Print", [ConstProduction "p"; Identifier])
 let Program = RepeatedProduction("Program", OneOfProduction([Declaration; Assignment; Print]))
+
+let parser = FrontEnd(ProgramProduction(Program))
 
 let isEOF (next: Option<Token>) =
     next.IsSome && next.Value.Type.Name = BaseTokenTypes.EOF.Name
@@ -75,11 +76,11 @@ let DeclPass: Transformer<TreeData> =
             then
                 Tree.Node({d with Data = d.Data.Add("type", d.Token.Value)}, c)
             else
-                let allint =
-                    c
-                    |> List.map(fun (Node(d, _)) -> d.Data.["type"] :?> string)
-                    |> List.forall(fun t -> t = "i")
-                if allint
+                let declaresInt (t: Tree<TreeData>): bool =
+                    match t with
+                    | Node(d, _) -> "i" = (d.Data.["type"] :?> string)
+                    | Empty -> true
+                if c |> List.forall declaresInt
                 then Tree.Node({d with Data = d.Data.Add("type", "i")}, c)
                 else Tree.Node({d with Data = d.Data.Add("type", "f")}, c)
         | Node(d, c) when d.Token.Type.Name = "Value" ->
@@ -89,11 +90,13 @@ let DeclPass: Transformer<TreeData> =
         | _ -> tree
 
     let checkScope (tree: Tree<TreeData>) =
-        let (Node(d, _)) = tree
-        match d.Token.Value with
-        | "f" -> declare tree
-        | "i" -> declare tree
-        | _ -> checkDeclaration tree
+        match tree with
+        | Node(d, _) ->
+            match d.Token.Value with
+            | "f" -> declare tree
+            | "i" -> declare tree
+            | _ -> checkDeclaration tree
+        | Empty -> tree
     Transformer(checkScope, pushScope, popScope)
 
 type Value =
@@ -134,7 +137,6 @@ and FValue (value: float) =
                 then (value :?> FValue).Value
                 else (value :?> IValue).Value |> float
             FValue(t.Value - value) :> Value
-
 
 let getValue (tree: TreeData): Value =
     if tree.Data.ContainsKey "value"

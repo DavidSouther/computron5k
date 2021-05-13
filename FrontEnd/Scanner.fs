@@ -62,14 +62,21 @@ type Matcher (tokenTypes: List<TokenType>) =
     let Map = keys |> Map.ofList
 
     member this.MatchTokenType(contents: string, offset: int) =
-        let matches = Regex.Match(contents, offset)
-        let groups = matches.Groups.Values
-        groups
-        |> Seq.filter(fun group -> group.Success)
-        |> Seq.filter(fun group -> Map.ContainsKey group.Name)
-        |> Seq.map (fun group -> (Map.[group.Name], group.Value))
-        |> Seq.take 1
-        |> Seq.tryHead
+        if offset >= contents.Length
+        then
+            Some (BaseTokenTypes.EOF, "")
+        else
+            let matches = Regex.Match(contents, offset)
+            let groups = matches.Groups.Values
+            groups
+            |> Seq.filter(fun group -> group.Success)
+            |> Seq.filter(fun group -> Map.ContainsKey group.Name)
+            |> Seq.map (fun group -> (Map.[group.Name], group.Value))
+            |> Seq.tryHead
+
+type Scanner =
+    abstract Next: Option<Token>
+    abstract Advance: unit -> Option<Token>
 
 // Scanner takes a Matcher, the string contents of a file, and a file
 // name (to use in error messaging). One scanner instance encloses the
@@ -77,24 +84,22 @@ type Matcher (tokenTypes: List<TokenType>) =
 // property which is the Token at the cursor, and an Advance method to
 // move the cursor to the next token (and update next to point at the
 // token it just crossed over).
-type Scanner (matcher: Matcher, contents: string, file: string) = 
+type BaseScanner (matcher: Matcher, contents: string, file: string) = 
     let mutable index = 0
     let mutable line = 1
     let mutable column = 1
     let mutable next: Option<Token> = None
 
-    let position () = {
-        Position.File = file;
-        Index = index
-        Line = line;
-        Column = column;
-    }
+    let position () =
+        { Position.File = file;
+          Index = index
+          Line = line;
+          Column = column; }
 
-    let makeToken (tokenType: TokenType) (value: string) = {
-        Token.Type = tokenType;
-        Value = value;
-        Position = position();
-    }
+    let makeToken (tokenType: TokenType) (value: string) =
+        { Token.Type = tokenType;
+          Value = value;
+          Position = position(); }
 
     let step (stride: string) =
         let d = stride.Length
@@ -109,12 +114,11 @@ type Scanner (matcher: Matcher, contents: string, file: string) =
             column <- column + d
         index <- index + d
 
-    let errorToken () = (
+    let errorToken () =
         let errChar = contents.Substring(index, 1)
         let token = makeToken BaseTokenTypes.Error errChar 
         step errChar
         token
-    )
 
     let filledToken tokenType value =
         let token = makeToken tokenType value 
@@ -123,24 +127,55 @@ type Scanner (matcher: Matcher, contents: string, file: string) =
 
     member _.File = file
 
-    member _.Next = next
+    interface Scanner with
+        override _.Next = next
 
-    member _.Advance ()  =
-        next <- Some(
-            match matcher.MatchTokenType(contents, index) with
-            | None -> errorToken()
-            | Some((tokenType, matched)) -> filledToken tokenType matched
-        )
-        next
+        override t.Advance () =
+            next <-
+                match matcher.MatchTokenType(contents, index) with
+                | Some(tokenType, matched) -> filledToken tokenType matched
+                | None -> errorToken ()
+                |> Some
+            next
             
+type SkipScanner (scanner: Scanner, toSkip: List<TokenType>) =
+    let shouldSkip () =
+        match scanner.Next with
+        | Some t -> toSkip |> List.contains t.Type
+        | None -> true 
+
+    let consume () = while shouldSkip() do scanner.Advance() |> ignore
+
+    interface Scanner with
+        member _.Next =
+            consume()
+            match scanner.Next with
+            | None -> { Token.Type = BaseTokenTypes.Error;
+                        Value = "UNEXPECTED_EOF";
+                        Position = { Position.File = "";
+                                     Line = -1;
+                                     Column = -1;
+                                     Index = -1; } } |> Some
+            | Some _ -> scanner.Next
+
+        member t.Advance () =
+            consume()
+            scanner.Advance() |> ignore
+            (t:>Scanner).Next
+
 // To simplify scanning over multiple files, the ScannerFactory takes
 // token types, and passes a Matcher for those TokenTypes to a Scanner
 // for any file. If given a string path, performs IO to load the file.
-type ScannerFactory (tokenTypes: List<TokenType>) =
+type ScannerFactory (tokenTypes: List<TokenType>, ?toSkip: List<TokenType>) =
     let matcher = Matcher tokenTypes
 
-    member this.Scan (contents: string, file: string) =
-        Scanner(matcher, contents, file) 
+    member this.Scan (contents: string, file: string): Scanner =
+        let baseScanner = BaseScanner(matcher, contents, file) 
+        let scanner = match toSkip with
+                      | Some skip -> SkipScanner(baseScanner, skip) :> Scanner
+                      | None -> baseScanner :> Scanner
+        scanner.Advance() |> ignore // Move to the first token
+        scanner
 
     member this.From(path: string) =
         let contents = System.IO.File.ReadAllText(path)

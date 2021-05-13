@@ -15,8 +15,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Expression.fs" />
     <Compile Include="Production.fs" />
-    <Compile Include="Parser.fs" />
     <Compile Include="Scanner.fs" />
   </ItemGroup>
 

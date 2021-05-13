@@ -9,7 +9,10 @@ type TokenType =
     override t.ToString () = t.Name
 
     static member From (name: string, priority: int, toMatch: List<string>) =
-        { TokenType.Name = name; Priority = priority; ToMatch = toMatch; Error = false }
+        { TokenType.Name = name;
+          Priority = priority;
+          ToMatch = toMatch;
+          Error = false }
     
     static member Literal (name: string, priority: int, toMatch: List<string>) =
         let toMatch =
@@ -78,6 +81,19 @@ type Tree<'T when 'T : equality> =
                 |> List.map(Tree.ToSExpression)
                 |> String.concat(" ")
             $"({car} {cdr})"
+
+    static member AsAscii (tree: Tree<'T>) =
+        let rec asAscii (tree: Tree<'T>, prefix: string) =
+            let rec listPart (list: List<Tree<'T>>) =
+                match list with
+                | [] -> ""
+                | c :: [] -> prefix + "└─ " + asAscii(c, prefix + "  ")
+                | c :: rest -> prefix + "├─ " + asAscii(c, prefix + "  ") + listPart(rest)
+            match tree with
+            | Empty -> ""
+            | Node (d, c) -> d.ToString() + listPart c
+
+        asAscii(tree, "")
 
 let TreeNode (token: Token) (children: List<Tree<TreeData>>): Tree<TreeData> =
     Tree.Node({ TreeData.Token = token; Data = Map.empty }, children)

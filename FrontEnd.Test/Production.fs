@@ -4,6 +4,7 @@ open FsUnit
 open NUnit.Framework
 
 open AST
+open Scanner
 open Production
 
 let simpleType = {
@@ -20,61 +21,59 @@ let simplePosition = {
 
 [<TestFixture>]
 type ProductionTest () =
-    let simpleToken (c: char) =
-        { Token.Value = $"{c}";
-            Position = simplePosition;
-            Type =  simpleType }
+    let makeScanner (input: string, production: Production) =
+        let literals = TokenType.Literal("literals", 0, production.Literals)
+        ScannerFactory(literals :: production.Terminals).Scan(input, "test")
 
     [<Test>]
     member _.test_ConstProduction () =
         let aProduction = ConstProduction "a" :> Production
-        let input = "a" |> Seq.map simpleToken
-        let matches = aProduction.Matches(Seq.head(input))
+        let input = makeScanner("a", aProduction)
+        let matches = aProduction.Matches(input.Next.Value)
         matches |> should equal true
-        let (input, tree) = aProduction.Consume (Seq.head(input), input)
-        input |>  should equal Seq.empty
+        let tree = aProduction.Consume (input.Next.Value, input)
+        input.Next.Value.Type |> should equal BaseTokenTypes.EOF
 
     [<Test>]
     member _.test_SimpleProduction () =
         let sProduction = SimpleProduction simpleType :> Production
-        let input = "a" |> Seq.map simpleToken
-        let t = Seq.head(input)
+        let input = makeScanner("a", sProduction)
+        let t = input.Next.Value
         let matches = sProduction.Matches t
         matches |> should equal true
-        let (input, tree) = sProduction.Consume (t, input)
-        input |> should equal Seq.empty
+        let tree = sProduction.Consume (t, input)
+        input.Next.Value.Type |> should equal BaseTokenTypes.EOF
 
 
     [<Test>]
     member _.test_OptionalProduction () =
         let aProduction = ConstProduction "a" :> Production
         let oProduction = OptionalProduction aProduction :> Production
-        let input = "ab" |> Seq.map simpleToken
-
-        let t = Seq.head input
+        let input = makeScanner("ab", aProduction)
+        let t = input.Next.Value
         oProduction.Matches t |> should equal true
-        let (input, _) = oProduction.Consume (t, input)
+        oProduction.Consume (t, input) |> ignore
 
-        let t = Seq.head input
+        let t = input.Next.Value
         t.Value |> should equal "b"
         oProduction.Matches t |> should equal true
 
-        let (input, tree) = oProduction.Consume (t, input)
+        let tree = oProduction.Consume (t, input)
         tree |> should equal Tree<TreeData>.Empty
-        input |> Seq.map(fun t -> t.Value) |> should equal ["b"]
+        input.Next.Value.Value |> should equal "b"
 
     [<Test>]
     member _.test_RepeatedProduction () =
         let aProduction = ConstProduction "a" :> Production
-        let rProduction = RepeatedProduction aProduction :> Production
-        let input = "aab" |> Seq.map simpleToken
+        let rProduction = RepeatedProduction("test", aProduction) :> Production
+        let input = makeScanner("aab", rProduction)
 
-        let t = Seq.head input
+        let t = input.Next.Value
         rProduction.Matches t |> should equal true
-        let (input, tree) = rProduction.Consume (t, input)
-        tree |> Tree.ToSExpression |> should equal "((a a))"
+        let tree = rProduction.Consume (t, input)
+        tree |> Tree.ToSExpression |> should equal "(test a a)"
 
-        let t = Seq.head input
+        let t = input.Next.Value
         rProduction.Matches t |> should equal false 
-        input |> Seq.map(fun t -> t.Value) |> should equal ["b"]
+        t.Value |> should equal "b"
 

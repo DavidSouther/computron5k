@@ -8,14 +8,17 @@ type Matcher =
     abstract matches: Token -> bool
 
 type Production =
+    abstract Literals: List<string>
+    abstract Terminals: List<TokenType>
     abstract Matches: Token -> bool
     abstract Consume: Token * Scanner -> Tree<TreeData>
 
 type ConstProduction (value: string) =
-    member _.Value = value
     interface Production with
+        override _.Literals = [value]
+        override _.Terminals = []
         override t.Matches (token: Token) =
-            token.Value = t.Value
+            token.Value = value
         override _.Consume (token: Token, scanner: Scanner) =
             scanner.Advance() |> ignore
             TreeLeaf(token)
@@ -23,6 +26,8 @@ type ConstProduction (value: string) =
 type SimpleProduction (matcher: TokenType) =
     member _.Matcher = matcher
     interface Production with
+        override _.Literals = []
+        override _.Terminals = [matcher]
         override t.Matches (token: Token) =
             token.Type = t.Matcher
         override _.Consume (token: Token, scanner: Scanner) =
@@ -31,6 +36,8 @@ type SimpleProduction (matcher: TokenType) =
 
 type OptionalProduction (production: Production) =
     interface Production with
+        override _.Literals = production.Literals
+        override _.Terminals = production.Terminals
         override _.Matches (_: Token) = true
         override _.Consume (token: Token, scanner: Scanner) = 
             if production.Matches token
@@ -39,6 +46,8 @@ type OptionalProduction (production: Production) =
 
 type OneOfProduction (productions: List<Production>) =
     interface Production with
+        override _.Literals = productions |> List.collect(fun p -> p.Literals)
+        override _.Terminals = productions |> List.collect(fun p -> p.Terminals)
         override _.Matches (_: Token) = true
         override _.Consume (token: Token, scanner: Scanner) =
             match productions |> List.tryFind(fun p -> p.Matches token) with
@@ -50,15 +59,16 @@ type OneOfProduction (productions: List<Production>) =
                 error
 
 type RepeatedProduction (name: string, production: Production) =
-    let repeatedTokenType = { TokenType.Name = "::RepeatedProduction::";
+    let repeatedTokenType = { TokenType.Name = name;
                                ToMatch = [];
                                Priority = -1;
                                Error = false; }
-    let tokenAt (position: Position) =
-        { Token.Value = name;
-          Position = position;
-          Type = repeatedTokenType; }
+    let tokenAt (position: Position) = { Token.Value = name;
+                                         Position = position;
+                                         Type = repeatedTokenType; }
     interface Production with
+        override _.Literals = production.Literals
+        override _.Terminals = production.Terminals 
         override _.Matches (token: Token) =
              production.Matches token
         override _.Consume (t: Token, scanner: Scanner) =
@@ -87,12 +97,13 @@ type RepeatedProduction (name: string, production: Production) =
 
 type StatementProduction (name: string, productions: List<Production>) =
     let first = productions.Head
-    let tokenType = {
-        TokenType.Name = "::StatementProduction::";
-        Priority = 0;
-        ToMatch = [];
-        Error = false; }
+    let tokenType = { TokenType.Name = name;
+                      Priority = 0;
+                      ToMatch = [];
+                        Error = false; }
     interface Production with
+        override _.Literals = productions |> List.collect(fun p -> p.Literals)
+        override _.Terminals = productions |> List.collect(fun p -> p.Terminals)
         override _.Matches (token: Token) =
             first.Matches token
         override _.Consume (t: Token, scanner: Scanner) =
@@ -113,6 +124,26 @@ type StatementProduction (name: string, productions: List<Production>) =
                     tree <- tree |> TreeErrors.Add message
             tree
 
-type ExpressionProduction (operators: List<Operator>) =
-    let operatorMap = makeOperatorParts operators
-    let parser = ParserFactory ()
+type ExpressionProduction (operators: List<Operator>, ?identifiers0: TokenType, ?values0: TokenType) =
+    let identifiers = defaultArg identifiers0 BaseTokenTypes.Identifier
+    let values = defaultArg identifiers0 BaseTokenTypes.Value
+    let (tokenType, operatorMap) = makeOperatorParts operators
+    let types = [tokenType; identifiers; values]
+    let parser = ParserFactory (operatorMap, types)
+    interface Production with
+        override _.Literals = []
+        override _.Terminals = types 
+        override _.Matches (token: Token) =
+            List.contains token.Type types
+        override _.Consume (t: Token, scanner: Scanner) =
+            parser.Parse scanner
+ 
+ type ProgramProduction (program: Production) =
+    interface Production with
+        override _.Terminals = BaseTokenTypes.EOF :: program.Terminals
+        override _.Literals = program.Literals
+        override _.Matches (token: Token) = program.Matches token
+        override _.Consume (token: Token, scanner: Scanner) =
+            let tree = program.Consume(token, scanner)
+            scanner.Next |> ignore // TODO should be EOF
+            tree

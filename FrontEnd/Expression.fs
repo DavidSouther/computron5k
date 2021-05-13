@@ -130,27 +130,9 @@ type GroupOperator (token: string, close: string, ?scope0: bool) =
             let error = errorToken($"Unexpected {token.Value} in infix position", token.Position)
             TreeNode error [left]
 
-type ParserFactory (operatorMap: Map<string, Operator>, identifiers: TokenType, values: TokenType, ?toSkip0: Set<string>) =
-    let toSkip = defaultArg toSkip0 defaultToSkip
-
+type ParserFactory (operatorMap: Map<string, Operator>, tokenTypes: List<TokenType>) =
+    member _.TokenTypes = tokenTypes
     member _.Parse (scanner: Scanner): Tree<TreeData> = 
-        let shouldSkip () =
-            match scanner.Next with
-            | None -> true
-            | Some t -> toSkip.Contains t.Type.Name
-
-        let consume () = while shouldSkip() do scanner.Advance() |> ignore
-        let Peek () =
-            consume()
-            match scanner.Next with
-            | None -> errorToken("UNEXPECTED_EOF", errorPosition)
-            | Some t -> t
-
-        let Advance () =
-            let peek = Peek()
-            scanner.Advance() |> ignore
-            peek
-
         let rootToken = 
             { Token.Value = "::expression::"
               Type =
@@ -167,8 +149,22 @@ type ParserFactory (operatorMap: Map<string, Operator>, identifiers: TokenType, 
                 member _.expect (token: string) =
                     errorToken("UNIMPLEMENTED_PARSER", errorPosition)
                 member _.next () =
-                    errorToken("UNIMPLEMENTED_PARSER", errorPosition)
-                    }
+                    errorToken("UNIMPLEMENTED_PARSER", errorPosition) }
+
+        let Peek =
+            match scanner.Next with
+            | None -> { Token.Type = BaseTokenTypes.Error;
+                        Value = "UNEXPECTED_EOF";
+                        Position = { Position.File = "";
+                                     Line = -1;
+                                     Column = -1;
+                                     Index = -1; } }
+            | Some next ->  next
+
+        let Advance () =
+            let peek = Peek 
+            scanner.Advance() |> ignore
+            peek
 
         let nud (token: Token) =
             if operatorMap.ContainsKey token.Value
@@ -181,7 +177,7 @@ type ParserFactory (operatorMap: Map<string, Operator>, identifiers: TokenType, 
             else left
 
         let bp () =
-            let token = Peek()
+            let token = Peek
             if token.Type.Name = "EOF"
             then System.Int32.MinValue 
             else
@@ -202,21 +198,17 @@ type ParserFactory (operatorMap: Map<string, Operator>, identifiers: TokenType, 
                 if peek.Value = token
                 then peek
                 else errorToken($"Expected {token}, got {peek.Value}", peek.Position)
-            member _.next () =
-                Advance ()
-                }
-
+            member _.next () = Advance () }
 
         let isEOF (next: Token) =
             next.Type.Name = BaseTokenTypes.EOF.Name
 
         let accepting (token: Token) =
-            ()
-            // TODO 
+            List.contains token.Type tokenTypes
 
         // Parse until the scanner is empty
         let mutable expressions: List<Tree<TreeData>> = List.empty
-        while accepting(Peek()) do
+        while accepting(Peek) do
             expressions <- expressions @ [parser.expression 0]
         TreeNode rootToken expressions
 
@@ -229,24 +221,10 @@ type ParserFactory (operatorMap: Map<string, Operator>, identifiers: TokenType, 
             let identifiers = defaultArg identifiers0 BaseTokenTypes.Identifier
             let values = defaultArg values0 BaseTokenTypes.Value
 
-            (*
-            ?keywords0: Keywords,
-            ?comments0: Comments,
-            ?whitespace0: Whitespace
-            let comments = defaultArg comments0 BaseTokenTypes.Comment
-            let whitespace = defaultArg whitespace0 BaseTokenTypes.Whitespace
-
-            comments; whitespace; BaseTokenTypes.Error; BaseTokenTypes.EOF
-            let keywords = defaultArg keywords0 Set.empty
-            if not keywords.IsEmpty then
-                let keywords = TokenType.Literal("Keywords", 80, keywords |> Set.toList)
-                tokenTypes <- tokenTypes @ [keywords]
-                
-            *)
-
 
             let (operatorTokenType, operatorMap) = makeOperatorParts operators
-            let mutable tokenTypes = [operatorTokenType; identifiers; values; ]
+            let tokenTypes = [operatorTokenType; identifiers; values; ]
 
-            let scanner = ScannerFactory tokenTypes
-            ParserFactory(scanner, operatorMap)
+            // let scanner = ScannerFactory tokenTypes
+            ParserFactory(operatorMap, tokenTypes)
+

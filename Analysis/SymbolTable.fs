@@ -6,8 +6,7 @@ type Symbol =
     { Name: string;
       Declared: Position;
       Initialized: Option<Position>;
-      Data: Map<string, obj>;
-      }
+      Data: Map<string, obj>; }
 
 type Scope =
     abstract Parent: Option<Scope>

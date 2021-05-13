@@ -5,26 +5,29 @@ open Analysis
 open ac
 
 let scan (file: string) = 
-    let scanner = scanner.From file
-    while not(ac.isEOF(scanner.Advance())) do
+    let scanner = parser.ScannerFactory.From file
+    while not(ac.isEOF(scanner.Next)) do
         scanner.Next.Value.ToRepl()
         |> Console.WriteLine
+        scanner.Advance () |> ignore
     ()
 
 let parse (file: string) =
-    parser.ParseFile file
+    parser.Parse file
     |> Tree.ToSExpression
     |> System.Console.WriteLine
 
 let rec Output (tree: Tree<TreeData>) : List<string> =
-    let (Node(d, c)) = tree
-    let output =
-        c
-        |> Microsoft.FSharp.Collections.List.map Output
-        |> Microsoft.FSharp.Collections.List.collect id
-    if d.Data.ContainsKey "out"
-    then output @ [d.Data.["out"] :?> string]
-    else output
+    match tree with
+    | Node(d, c) ->
+        let output =
+            c
+            |> Microsoft.FSharp.Collections.List.map Output
+            |> Microsoft.FSharp.Collections.List.collect id
+        if d.Data.ContainsKey "out"
+        then output @ [d.Data.["out"] :?> string]
+        else output
+    | Empty -> []
 
 [<EntryPoint>]
 let main argv =
@@ -38,7 +41,7 @@ let main argv =
         parse file
         0
     | "interpret" ->
-        let ast = parser.ParseFile file
+        let ast = parser.Parse file
 
         let analyzer = PassManager.Empty.AddPass(Passes.ScopePass).AddPass(ac.DeclPass).AddPass(ac.InterpretPass)
         let ast = analyzer.Run ast

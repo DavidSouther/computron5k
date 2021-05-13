@@ -4,6 +4,7 @@ open FsUnit
 open NUnit.Framework
 
 open AST
+open Scanner
 open Parser
 
 [<TestFixture>]
@@ -32,9 +33,11 @@ type TestParser () =
                 TreeLeaf error }
     ]
     let parser = ParserFactory.For operators
+    let scannerFactory = ScannerFactory([BaseTokenTypes.Whitespace; BaseTokenTypes.Identifier; BaseTokenTypes.Value] @ parser.TokenTypes)
 
     let parse input =
-        let tree = parser.Parse(input, "test")
+        let scanner = scannerFactory.Scan(input, "test")
+        let tree = parser.Parse(scanner)
         match tree with
         | Node (t, []) -> tree
         | Node (t, c) -> c.Head
@@ -64,7 +67,8 @@ type TestParser () =
             RightBinaryOperator("=", 10)
         ]
         let parse input =
-            let tree = parser.Parse(input, "test")
+            let scanner = scannerFactory.Scan(input, "test")
+            let tree = parser.Parse(scanner)
             match tree with
             | Node (t, []) -> tree
             | Node (t, c) -> c.Head
