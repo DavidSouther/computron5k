@@ -1,0 +1,36 @@
+/* Computes a dot product of two points using a method inside of a class*/
+/* Includes using new to create instance of the class */
+/* WILL NOT COMPILE USING BASE TCCL GRAMMAR BECAUSE OF CALL TO new() */
+
+
+ public class Point {
+   
+   private int x;
+   private int y;
+
+   /* Constructor for Point) */
+   public Point(int ix, int iy) {
+
+        this.x = ix;
+        this.y = iy;
+
+   }
+
+   public int DotProduct (Point p) {
+   
+   	return ((this.x * p.x) + (this.y * p.y));
+
+   }
+
+   public static void main() {
+     
+     Point p1, p2;
+     p1 = new Point(5, 8);
+     p2 = new Point(2, 20);
+
+     Console.WriteLine("({0}, {1}) . ({2}, {3}) = {4}.",
+		       x1, y1, x2, y2, p1.DotProduct(p2));
+   
+   }
+
+ }

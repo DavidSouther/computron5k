@@ -1,0 +1,33 @@
+/* Computes a dot product of two points using a method inside of a struct*/
+/* Instances of the struct are declared as local variables in main() */
+
+
+public class structPoint {
+
+/* Declarations in a struct  */
+
+    public struct point {
+        private int x;
+        private int y;
+
+        public void init(int ix, int iy) {
+            x = ix;
+            y = iy;
+        }
+
+        public int DotProduct (point p) {
+            return ((x * p.x) + (y * p.y));
+        }
+
+     }
+
+    public static void main() {
+        point p1, p2;
+        p1.init(5, 8);
+        p2.init(2, 20);
+
+        Console.WriteLine("({0}, {1}) . ({2}, {3}) = {4}.",
+                x1, y1, x2, y2, p1.DotProduct(p2));
+     }   
+   }
+}

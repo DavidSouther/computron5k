@@ -1,0 +1,18 @@
+/*Tests calls to Writeline with a string */
+/*  Calls WriteLine with integers        */
+
+public class compute {
+    
+    public void main ()
+    {
+        int w,x;
+        x = 3+4;  
+        Write("Value of x = ");
+        WriteLine(x);
+        w = x-5;  
+        Write("Value of w = ");
+        WriteLine(w);
+        Write("value of big expression =");
+        WriteLine(w*x+(12/w));
+    }
+}

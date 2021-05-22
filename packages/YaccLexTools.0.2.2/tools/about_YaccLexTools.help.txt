@@ -1,0 +1,23 @@
+TOPIC
+    about_YaccLexTools
+
+SHORT DESCRIPTION
+    Provides information about Yacc/Lex Tools commands.
+
+LONG DESCRIPTION
+    This topic describes the Yacc/Lex Tools commands. Yacc/Lex Tools is
+    a package that simplify the use of parser/scanner generators in your
+	C# projects.
+
+    The following Yacc/Lex Tools cmdlets are used for managing parsers.
+
+        Cmdlet                   Description
+        ----------------------   --------------------------------------------------
+        Add-Parser			     Adds a new parser in a project.
+
+        Remove-Parser            Removes a parser's build settings from a project.
+
+        Remove-AllParsers        Removes build settings for all parsers.
+
+        Add-CalculatorExample    Adds a Calculator example.
+

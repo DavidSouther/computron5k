@@ -1,0 +1,35 @@
+C:\Users\lebla\Documents\GitHub\Project-4\obj\Debug\Project4.csprojResolveAssemblyReference.cache
+C:\Users\lebla\Documents\GitHub\Project-4\bin\Debug\TCCL-CodeGen.exe.config
+C:\Users\lebla\Documents\GitHub\Project-4\bin\Debug\TCCL-CodeGen.exe
+C:\Users\lebla\Documents\GitHub\Project-4\bin\Debug\TCCL-CodeGen.pdb
+C:\Users\lebla\Documents\GitHub\Project-4\obj\Debug\TCCL-CodeGen.exe
+C:\Users\lebla\Documents\GitHub\Project-4\obj\Debug\TCCL-CodeGen.pdb
+C:\Users\lebla\Dropbox\CPSC 4400\Git repositories\project-4-instructor-starter\bin\Debug\TCCL-CodeGen.exe.config
+C:\Users\lebla\Dropbox\CPSC 4400\Git repositories\project-4-instructor-starter\bin\Debug\TCCL-CodeGen.exe
+C:\Users\lebla\Dropbox\CPSC 4400\Git repositories\project-4-instructor-starter\bin\Debug\TCCL-CodeGen.pdb
+C:\Users\lebla\Dropbox\CPSC 4400\Git repositories\project-4-instructor-starter\obj\Debug\Project4.csprojResolveAssemblyReference.cache
+C:\Users\lebla\Dropbox\CPSC 4400\Git repositories\project-4-instructor-starter\obj\Debug\TCCL-CodeGen.exe
+C:\Users\lebla\Dropbox\CPSC 4400\Git repositories\project-4-instructor-starter\obj\Debug\TCCL-CodeGen.pdb
+C:\Users\lebla\Dropbox\CPSC 4400\Git repositories\project-4-instructor-complete\bin\Debug\TCCL-CodeGen.exe.config
+C:\Users\lebla\Dropbox\CPSC 4400\Git repositories\project-4-instructor-complete\bin\Debug\TCCL-CodeGen.exe
+C:\Users\lebla\Dropbox\CPSC 4400\Git repositories\project-4-instructor-complete\bin\Debug\TCCL-CodeGen.pdb
+C:\Users\lebla\Dropbox\CPSC 4400\Git repositories\project-4-instructor-complete\obj\Debug\Project4.csprojResolveAssemblyReference.cache
+C:\Users\lebla\Dropbox\CPSC 4400\Git repositories\project-4-instructor-complete\obj\Debug\TCCL-CodeGen.exe
+C:\Users\lebla\Dropbox\CPSC 4400\Git repositories\project-4-instructor-complete\obj\Debug\TCCL-CodeGen.pdb
+C:\Users\leblanc\OneDrive - Seattle University\CPSC 4400-5400\CPSC 4400\Git repositories\project-4-instructor-complete\bin\Debug\TCCL-CodeGen.exe.config
+C:\Users\leblanc\OneDrive - Seattle University\CPSC 4400-5400\CPSC 4400\Git repositories\project-4-instructor-complete\bin\Debug\TCCL-CodeGen.exe
+C:\Users\leblanc\OneDrive - Seattle University\CPSC 4400-5400\CPSC 4400\Git repositories\project-4-instructor-complete\bin\Debug\TCCL-CodeGen.pdb
+C:\Users\leblanc\OneDrive - Seattle University\CPSC 4400-5400\CPSC 4400\Git repositories\project-4-instructor-complete\obj\Debug\Project4.csproj.CoreCompileInputs.cache
+C:\Users\leblanc\OneDrive - Seattle University\CPSC 4400-5400\CPSC 4400\Git repositories\project-4-instructor-complete\obj\Debug\TCCL-CodeGen.exe
+C:\Users\leblanc\OneDrive - Seattle University\CPSC 4400-5400\CPSC 4400\Git repositories\project-4-instructor-complete\obj\Debug\TCCL-CodeGen.pdb
+C:\Users\leblanc\Documents\GitHub\Project-4-instructor-initial\bin\Debug\TCCL-CodeGen.exe.config
+C:\Users\leblanc\Documents\GitHub\Project-4-instructor-initial\bin\Debug\TCCL-CodeGen.exe
+C:\Users\leblanc\Documents\GitHub\Project-4-instructor-initial\bin\Debug\TCCL-CodeGen.pdb
+C:\Users\leblanc\Documents\GitHub\Project-4-instructor-initial\obj\Debug\Project4.csprojAssemblyReference.cache
+C:\Users\leblanc\Documents\GitHub\Project-4-instructor-initial\obj\Debug\Project4.csproj.CoreCompileInputs.cache
+C:\Users\leblanc\Documents\GitHub\Project-4-instructor-initial\obj\Debug\TCCL-CodeGen.exe
+C:\Users\leblanc\Documents\GitHub\Project-4-instructor-initial\obj\Debug\TCCL-CodeGen.pdb
+C:\Users\leblanc\Documents\GitHub\Project-4-student-initial\obj\Debug\Project4.csprojAssemblyReference.cache
+C:\Users\leblanc\Documents\GitHub\Project-4-student-initial\obj\Debug\Project4.csproj.CoreCompileInputs.cache
+C:\Users\leblanc\Documents\GitHub\Project-4-student-initial\obj\Debug\TCCL-CodeGen.exe
+C:\Users\leblanc\Documents\GitHub\Project-4-student-initial\obj\Debug\TCCL-CodeGen.pdb

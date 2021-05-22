@@ -1,0 +1,16 @@
+/* Computes factorials:  tests method calls, while, assignment */
+
+public class loop {
+
+  public static void main() {
+     int i, gobble;
+     i = 0;
+     gobble = 1;
+     WriteLine ("Beginning loop test");
+     while ( i < 10) {
+        WriteLine (gobble);
+        i = i + 1;
+        gobble = gobble * i;
+     }   
+   }
+}
