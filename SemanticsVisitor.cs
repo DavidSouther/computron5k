@@ -22,7 +22,7 @@ namespace ASTBuilder
             return this.GetType().Name;
         }
 
-        private bool TraceFlag = false;  // Set to true or false to control trace
+        private bool TraceFlag = true;  // Set to true or false to control trace
 
         private void Trace(AbstractNode node, string suffix = "")
         {
@@ -261,6 +261,7 @@ namespace ASTBuilder
             var attrs = new MethodAttributes(returnType, types);
             table.enterInParent(name.ToString(), attrs);
             GetCurrentClass().enter(name.ToString(), attrs);
+            node.NodeType = attrs;
 
             dynamic methodBody = signature.Sib;
             VisitNode(methodBody);

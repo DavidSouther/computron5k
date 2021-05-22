@@ -107,8 +107,39 @@ namespace ASTBuilder
             file.WriteLine("   ret");
             file.WriteLine("}");
             // DELETE TRHOUGH HERE
-
         }
 
+        public void VisitNode(MethodDeclaration method)
+        {
+            var attributes = (MethodAttributes) method.NodeType;
+            var modifiers = method.Child;
+            var name = modifiers.Sib.Sib.ToString();
+            file.WriteLine($".method static {attributes.Return} {name}()");
+            file.WriteLine("{");
+            if (name == "main") file.WriteLine("  .entrypoint");
+            file.WriteLine("  .maxstack 1"); // TODO calculate size
+            VisitChildren(method);
+            file.WriteLine("  ret");
+            file.WriteLine("}");
+        } 
+
+        public void VisitNode(MethodCall call) {
+            VisitChildren(call);
+            var ret = "void";
+            var arg = "string";
+            var name = call.Child;
+            if (name.ToString() == "Write" || name.ToString() == "WriteLine")
+            {
+                file.WriteLine("   call void [mscorlib]System.Console::WriteLine(string)");
+            } else
+            {
+                file.WriteLine($"   call {ret} {name}({arg})");
+            }
+        }
+
+        public void VisitNode(STR_CONST str)
+        {
+            file.WriteLine($"  ldstr \"{str.ToString()}\"");
+        }
     }
 }
