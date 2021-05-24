@@ -1,18 +1,24 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ASTBuilder
 {
+    public class TypeDeclaration
+    {
+        public string Name { get; set; }
+        public TypeDescriptor Type { get; set; }
+        public TypeDeclaration(string name, TypeDescriptor type)
+        {
+            Name = name;
+            Type = type;
+        }
+    }
+
     /****************************************************/
     /*Information about symbols held in AST nodes and the symbol table*/
     /****************************************************/
     public abstract class Attributes
     {
-        
         public Attributes() 
         {
            
@@ -53,6 +59,8 @@ namespace ASTBuilder
     {
         public TypeDescriptor Return;
         public List<TypeDescriptor> Arguments;
+        private List<TypeDeclaration> locals = new List<TypeDeclaration>();
+
         public MethodAttributes(TypeDescriptor ret, List<TypeDescriptor> args)
         {
             Return = ret;
@@ -75,6 +83,27 @@ namespace ASTBuilder
             ret += Return.type;
             return ret;
         }
+
+        public void RegisterLocal(string name, TypeDescriptor type)
+        {
+            foreach(var local in locals)
+            {
+                if (local.Name == name) return;
+            }
+            locals.Add(new TypeDeclaration(name, type));
+        }
+
+        public int Location(QualifiedName name)
+        {
+            for(var i = 0; i < locals.Count; i++)
+            {
+                if (name.ToString() == locals[i].Name)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
     }
 
     public class ClassAttributes: Attributes
@@ -96,10 +125,10 @@ namespace ASTBuilder
         {
             properties[name] = attributes;
         }
+
         public Attributes lookup(string name) {
             return properties[name];
         }
-
     }
 
     public class ErrorAttributes : Attributes

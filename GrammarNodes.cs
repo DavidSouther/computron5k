@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace ASTBuilder
 {
@@ -85,16 +86,16 @@ namespace ASTBuilder
 
     public class INT_CONST : AbstractNode
     {
-        public virtual string IntVal { get; protected set; }
+        public virtual int IntVal { get; protected set; }
 
         public INT_CONST(string s)
         {
-            IntVal = s;
+            IntVal = Int32.Parse(s);
         }
 
         public override string ToString()
         {
-            return IntVal;
+            return IntVal.ToString();
         }
     }
 

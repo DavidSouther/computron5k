@@ -20,6 +20,11 @@ namespace ASTBuilder
             Console.WriteLine("    " + this.GetType().ToString());
         }
 
+        override public string ToString()
+        {
+            return this.type.ToString();
+        }
+
         public static TypeDescriptor From(AbstractNode node)
         {
             if (node is PrimitiveType)

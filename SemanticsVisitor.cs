@@ -255,12 +255,12 @@ namespace ASTBuilder
 
             // Update symbol table with inputs
             dynamic name = signature.Child;
-            var returnType = TypeDescriptor.From(typeSpec);
             var parameters = (ParameterList)name.Sib;
+            var returnType = TypeDescriptor.From(typeSpec);
             var types = parameters == null ? new List<TypeDescriptor>() : parameters.Types();
             var attrs = new MethodAttributes(returnType, types);
-            table.enterInParent(name.ToString(), attrs);
             GetCurrentClass().enter(name.ToString(), attrs);
+            table.enterInParent(name.ToString(), attrs);
             node.NodeType = attrs;
 
             dynamic methodBody = signature.Sib;

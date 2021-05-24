@@ -1,9 +1,25 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26228.10
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31129.286
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Project4", "Project4.csproj", "{82DC719C-48C3-4F6D-B2F3-4C1356785264}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{76B54301-0136-415A-BBF3-22743AE891F7}"
+	ProjectSection(SolutionItems) = preProject
+		TestFiles\compute.txt = TestFiles\compute.txt
+		TestFiles\errors1.txt = TestFiles\errors1.txt
+		TestFiles\errors2.txt = TestFiles\errors2.txt
+		TestFiles\fact2.txt = TestFiles\fact2.txt
+		TestFiles\hello.txt = TestFiles\hello.txt
+		TestFiles\iftest.txt = TestFiles\iftest.txt
+		TestFiles\logictest.txt = TestFiles\logictest.txt
+		TestFiles\loop.txt = TestFiles\loop.txt
+		TestFiles\point.txt = TestFiles\point.txt
+		TestFiles\struct1.txt = TestFiles\struct1.txt
+		TestFiles\struct2.txt = TestFiles\struct2.txt
+		TestFiles\writenums.txt = TestFiles\writenums.txt
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,5 +34,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {517751DD-1785-462C-B9BC-10474D6C3F5A}
 	EndGlobalSection
 EndGlobal

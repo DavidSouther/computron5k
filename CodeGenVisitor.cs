@@ -31,6 +31,13 @@ namespace ASTBuilder
                 Console.ResetColor();
             }
         }
+
+        private int nextLabel = 0;
+        private string MakeLabel(string prefix)
+        {
+            return $"{prefix}_{nextLabel++}";
+        }
+
         public void GenerateCode(dynamic node, string filename)
             // node is the root of the AST for the entire TCCL program
         {
@@ -93,53 +100,162 @@ namespace ASTBuilder
             file.WriteLine(".assembly test1 { }");
 
             VisitChildren(node);
-
-            // The following lines are present so that an executable .il file is generated even
-            // before you have implemented any VisitNode routines.  It generated the body for the
-            // hello.txt program regardless of what file is parsed to create the AST.
-            // DELETE THESE LINES ONCE YOU HAVE IMPLEMENTED VisitNode FOR MethodDeclaration
-            file.WriteLine(".method static void main()");
-            file.WriteLine("{");
-            file.WriteLine("   .entrypoint");
-            file.WriteLine("   .maxstack 1");
-            file.WriteLine("   ldstr \"Hello world!\"");
-            file.WriteLine("   call void [mscorlib]System.Console::WriteLine(string)");
-            file.WriteLine("   ret");
-            file.WriteLine("}");
-            // DELETE TRHOUGH HERE
         }
 
-        public void VisitNode(MethodDeclaration method)
+        public void VisitNode(MethodDeclaration node)
         {
-            var attributes = (MethodAttributes) method.NodeType;
-            var modifiers = method.Child;
-            var name = modifiers.Sib.Sib.ToString();
-            file.WriteLine($".method static {attributes.Return} {name}()");
+            currentMethod = (MethodAttributes) node.NodeType;
+            dynamic modifiers = node.Child;
+            var name = modifiers.Sib.Sib.Child.ToString();
+            file.WriteLine($".method static {currentMethod.Return} {name}()");
             file.WriteLine("{");
             if (name == "main") file.WriteLine("  .entrypoint");
-            file.WriteLine("  .maxstack 1"); // TODO calculate size
-            VisitChildren(method);
+            file.WriteLine("  .maxstack 3"); // TODO calculate size
+            VisitChildren(node);
             file.WriteLine("  ret");
             file.WriteLine("}");
-        } 
+            currentMethod = null;
+        }
 
-        public void VisitNode(MethodCall call) {
-            VisitChildren(call);
+        private MethodAttributes currentMethod = null;
+
+        public void VisitNode(MethodCall node) {
+            Trace(node);
+            VisitChildren(node);
             var ret = "void";
             var arg = "string";
-            var name = call.Child;
+            dynamic name = node.Child;
             if (name.ToString() == "Write" || name.ToString() == "WriteLine")
             {
-                file.WriteLine("   call void [mscorlib]System.Console::WriteLine(string)");
+                var type = ((TypeAttributes)name.Sib.NodeType).thisType;
+                file.WriteLine($"  call void [mscorlib]System.Console::WriteLine({type})");
             } else
             {
-                file.WriteLine($"   call {ret} {name}({arg})");
+                file.WriteLine($"  call {ret} {name}({arg})");
             }
         }
 
-        public void VisitNode(STR_CONST str)
+        public void VisitNode(STR_CONST node)
         {
-            file.WriteLine($"  ldstr \"{str.ToString()}\"");
+            Trace(node);
+            file.WriteLine($"  ldstr \"{node.ToString()}\"");
+        }
+
+        public void VisitNode(INT_CONST node)
+        {
+            Trace(node);
+            if (node.IntVal < 128)
+            {
+                // Short form
+                file.WriteLine($"  ldc.i4.s {node.IntVal}");
+            } else
+            {
+                file.WriteLine($"  ldc.i4 {node.IntVal}");
+            }
+        }
+
+        private void Store(QualifiedName node)
+        {
+            // Generate stloc for node
+            int location = currentMethod.Location(node);
+            if (location < 4)
+            {
+               file.WriteLine($"  stloc.{location}");
+            } else if (location < 128)
+            {
+               file.WriteLine($"  stloc.s {location}");
+            } else
+            {
+               file.WriteLine($"  stloc {location}");
+            }
+        }
+
+        public void VisitNode(Expression node)
+        {
+            Trace(node);
+            dynamic left = node.Child;
+            dynamic right = left.Sib;
+
+            if (node.exprKind == ExprKind.ASSIGN)
+            {
+                VisitNode(right);
+                Store((QualifiedName)left);
+            }
+            else
+            {
+                if (right != null)
+                {
+                    if (node.exprKind == ExprKind.OP_LAND)
+                    {
+                        // Short circuit and
+                        var endLabel = MakeLabel("and_short_circuit");
+                        VisitNode(left);
+                        file.WriteLine($"  bfalse.s {endLabel}");
+                        // Left was true, clear it from the stack
+                        file.WriteLine("  pop");
+                        VisitNode(right);
+                        // Right is final state of expression
+                        file.WriteLine($"{endLabel}:");
+                    }
+                    else if (node.exprKind == ExprKind.OP_LOR)
+                    {
+                        // Short circuit OR
+                        var endLabel = MakeLabel("or_short_circuit");
+                        VisitNode(left);
+                        file.WriteLine($"  btrue.s {endLabel}");
+                        // Left was false, clear it from the stack
+                        file.WriteLine("  pop");
+                        VisitNode(right);
+                        // Right is final state of expression
+                        file.WriteLine($"{endLabel}:");
+                    }
+                    else
+                    {
+                        VisitNode(left);
+                        VisitNode(right);
+                        file.WriteLine(opcode(node.exprKind));
+                    }
+                }
+                else
+                {
+                    // TODO unary conversion
+                    if (node.exprKind == ExprKind.MINUSOP)
+                    {
+                        file.Write("  ldc.i4.0");
+                        VisitNode(left);
+                        file.Write("  sub");
+                    }
+                }
+            }
+
+        }
+
+        private string opcode(ExprKind exprKind)
+        {
+            switch(exprKind)
+            {
+                // Bitwise operators
+                case ExprKind.PIPE: return "  or";
+                case ExprKind.HAT: return "  xor";
+                case ExprKind.AND: return "  and";
+
+                // Arithmetic operators
+                case ExprKind.PLUSOP: return "  add";
+                case ExprKind.MINUSOP: return "  sub";
+                case ExprKind.ASTERISK: return "  mul";
+                case ExprKind.RSLASH: return "  div";
+                case ExprKind.PERCENT: return "  rem";
+
+                // Comparison operators
+                case ExprKind.OP_EQ: return "  ceq";
+                case ExprKind.OP_NE: return "  ceq\n  not";
+                case ExprKind.OP_GT: return "  cgt";
+                case ExprKind.OP_LT: return "  clt";
+                case ExprKind.OP_LE: return "  cgt\n  not";
+                case ExprKind.OP_GE: return "  clt\n  not";
+
+                default: return "noop // error"; // TODO throw
+            }
         }
     }
 }

@@ -15,12 +15,19 @@ namespace ASTBuilder
         public static void ILasm(String filename)
         {
 
+            var root = Path.Combine(Directory.GetCurrentDirectory(), filename);
+            try
+            {
+                System.IO.File.Delete($"{root}.exe");
+            } catch (Exception e)
+            {
+                Console.WriteLine("Failed to delete {0}: {1}", $"{root}.exe", e);
+            } 
+
             var ilasm = Microsoft.Build.Utilities.ToolLocationHelper.GetPathToDotNetFrameworkFile("ilasm.exe", TargetDotNetFrameworkVersion.VersionLatest);
 
-            string filenameil = Path.Combine(Directory.GetCurrentDirectory(), filename + ".il");
-
-            string ilasmArg = "\"" + filenameil + "\"";
-            string execArgs = "/c \"" + filename + ".exe\" &pause";
+            string ilasmArg = $"\"{filename}.il\"";
+            string execArgs = $"/c \"{filename}.exe\" &pause";
 
             Console.WriteLine("Invoking ILASM: {0}", ilasm + " " + ilasmArg);
             Console.WriteLine("----------------------------------------");
