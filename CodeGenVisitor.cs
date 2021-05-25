@@ -283,8 +283,8 @@ namespace ASTBuilder
             dynamic trueCase = condition.Sib;
             dynamic falseCase = trueCase.Sib;
 
-            var falseLabel = MakeLabel("_false_label");
-            var endLabel = MakeLabel("_end_label");
+            var falseLabel = MakeLabel("_if_false_label");
+            var endLabel = MakeLabel("_if_end_label");
 
             VisitNode(condition);
             file.WriteLine($"  brfalse.s {falseLabel}");
@@ -299,6 +299,21 @@ namespace ASTBuilder
                 file.WriteLine($"{falseLabel}:");
             }
             file.WriteLine($"{endLabel}:");
+        }
+
+        public void VisitNode(IterationStatement node)
+        {
+            dynamic condition = node.Child;
+            dynamic body = condition.Sib;
+            var start = MakeLabel("_loop_start");
+            var end = MakeLabel("_loop_end");
+
+            file.WriteLine($"{start}:");
+            VisitNode(condition);
+            file.WriteLine($"  brfalse.s {end}");
+            VisitNode(body);
+            file.WriteLine($"  br.s {start}");
+            file.WriteLine($"{end}:");
         }
     }
 }
