@@ -261,6 +261,7 @@ namespace ASTBuilder
             var attrs = new MethodAttributes(returnType, types);
             GetCurrentClass().enter(name.ToString(), attrs);
             table.enterInParent(name.ToString(), attrs);
+            SetCurrentMethod(attrs);
             node.NodeType = attrs;
 
             dynamic methodBody = signature.Sib;
@@ -363,6 +364,7 @@ namespace ASTBuilder
                 } else
                 {
                     table.enter(name, node.NodeType);
+                    GetCurrentMethod().RegisterLocal(name, node.Type());
                 }
             }
 

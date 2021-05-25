@@ -59,7 +59,7 @@ namespace ASTBuilder
     {
         public TypeDescriptor Return;
         public List<TypeDescriptor> Arguments;
-        private List<TypeDeclaration> locals = new List<TypeDeclaration>();
+        public List<TypeDeclaration> Locals = new List<TypeDeclaration>();
 
         public MethodAttributes(TypeDescriptor ret, List<TypeDescriptor> args)
         {
@@ -86,18 +86,18 @@ namespace ASTBuilder
 
         public void RegisterLocal(string name, TypeDescriptor type)
         {
-            foreach(var local in locals)
+            foreach(var local in Locals)
             {
                 if (local.Name == name) return;
             }
-            locals.Add(new TypeDeclaration(name, type));
+            Locals.Add(new TypeDeclaration(name, type));
         }
 
         public int Location(QualifiedName name)
         {
-            for(var i = 0; i < locals.Count; i++)
+            for(var i = 0; i < Locals.Count; i++)
             {
-                if (name.ToString() == locals[i].Name)
+                if (name.ToString() == Locals[i].Name)
                 {
                     return i;
                 }

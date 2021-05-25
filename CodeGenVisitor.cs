@@ -110,7 +110,10 @@ namespace ASTBuilder
             file.WriteLine($".method static {currentMethod.Return} {name}()");
             file.WriteLine("{");
             if (name == "main") file.WriteLine("  .entrypoint");
-            file.WriteLine("  .maxstack 3"); // TODO calculate size
+            file.WriteLine("  .maxstack 32"); // TODO calculate size
+            file.Write("  .locals init (");
+            file.Write(String.Join(", ", currentMethod.Locals.Select(x => x.Type)));
+            file.WriteLine(")");
             VisitChildren(node);
             file.WriteLine("  ret");
             file.WriteLine("}");
@@ -121,10 +124,17 @@ namespace ASTBuilder
 
         public void VisitNode(MethodCall node) {
             Trace(node);
-            VisitChildren(node);
             var ret = "void";
             var arg = "string";
             dynamic name = node.Child;
+            dynamic argument = name.Sib;
+            inExpression = true;
+            while (argument != null)
+            {
+                VisitNode(argument);
+                argument = argument.Sib;
+            }
+            inExpression = false;
             if (name.ToString() == "Write" || name.ToString() == "WriteLine")
             {
                 var type = ((TypeAttributes)name.Sib.NodeType).thisType;
@@ -170,12 +180,14 @@ namespace ASTBuilder
             }
         }
 
+        private bool inExpression = false;
         public void VisitNode(Expression node)
         {
             Trace(node);
             dynamic left = node.Child;
             dynamic right = left.Sib;
 
+            inExpression = true;
             if (node.exprKind == ExprKind.ASSIGN)
             {
                 VisitNode(right);
@@ -227,7 +239,7 @@ namespace ASTBuilder
                     }
                 }
             }
-
+            inExpression = false;
         }
 
         private string opcode(ExprKind exprKind)
@@ -256,6 +268,13 @@ namespace ASTBuilder
 
                 default: return "noop // error"; // TODO throw
             }
+        }
+
+        public void VisitNode(QualifiedName node)
+        {
+            if (!inExpression) return;
+            var loc = currentMethod.Location(node);
+            file.WriteLine($"  ldloc.{loc}");
         }
     }
 }
