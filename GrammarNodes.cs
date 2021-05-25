@@ -280,6 +280,14 @@ namespace ASTBuilder
         }
     }
 
+    public class Block : AbstractNode
+    {
+        public Block (AbstractNode items)
+        {
+            adoptChildren(items);
+        }
+    }
+
     public class IterationStatement : AbstractNode
     {
         public IterationStatement(AbstractNode condition, AbstractNode body)

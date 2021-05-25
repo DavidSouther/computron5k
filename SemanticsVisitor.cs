@@ -183,7 +183,7 @@ namespace ASTBuilder
                     node.NodeType = new ErrorAttributes("Expression expected Integer, got " + left.ToString() + " and " + right.ToString());
                 }
             }
-            else if (left.Equals(right))
+            else if (left != null && left.Equals(right))
             {
                 switch (node.exprKind) {
                     case ExprKind.OP_LAND:

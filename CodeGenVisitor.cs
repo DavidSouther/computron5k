@@ -276,5 +276,29 @@ namespace ASTBuilder
             var loc = currentMethod.Location(node);
             file.WriteLine($"  ldloc.{loc}");
         }
+
+        public void VisitNode(SelectionStatement node)
+        {
+            dynamic condition = node.Child;
+            dynamic trueCase = condition.Sib;
+            dynamic falseCase = trueCase.Sib;
+
+            var falseLabel = MakeLabel("_false_label");
+            var endLabel = MakeLabel("_end_label");
+
+            VisitNode(condition);
+            file.WriteLine($"  brfalse.s {falseLabel}");
+            VisitNode(trueCase);
+            if (falseCase != null)
+            {
+                file.WriteLine($"  br.s {endLabel}");
+                file.WriteLine($"{falseLabel}:");
+                VisitNode(falseCase);
+            } else
+            {
+                file.WriteLine($"{falseLabel}:");
+            }
+            file.WriteLine($"{endLabel}:");
+        }
     }
 }

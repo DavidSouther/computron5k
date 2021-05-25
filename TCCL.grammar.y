@@ -116,7 +116,7 @@ ConstructorDeclaration      :   Modifiers MethodSignature Block { $$ = $1; }
 StaticInitializer           :   STATIC Block                     { $$ = new StaticInitializer($2); }
                             ;
         
-Block                       :   LBRACE LocalItems RBRACE              { $$ = $2;} 
+Block                       :   LBRACE LocalItems RBRACE              { $$ = new Block($2);} 
                             |   LBRACE RBRACE
                             ;
 

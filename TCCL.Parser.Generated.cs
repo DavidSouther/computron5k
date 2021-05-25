@@ -4,9 +4,9 @@
 
 // GPPG version 1.5.2
 // Machine:  DESKTOP-S2F9GQI
-// DateTime: 5/21/2021 10:46:26 PM
+// DateTime: 5/24/2021 10:47:27 PM
 // UserName: david
-// Input file <TCCL.grammar.y - 5/21/2021 10:46:12 PM>
+// Input file <TCCL.grammar.y - 5/24/2021 10:46:52 PM>
 
 // options: no-lines diagnose & report gplex
 
@@ -473,7 +473,7 @@ internal partial class TCCLParser: ShiftReduceParser<AbstractNode, LexLocation>
 { CurrentSemanticValue = new StaticInitializer(ValueStack[ValueStack.Depth-1]); }
         break;
       case 41: // Block -> LBRACE, LocalItems, RBRACE
-{ CurrentSemanticValue = ValueStack[ValueStack.Depth-2];}
+{ CurrentSemanticValue = new Block(ValueStack[ValueStack.Depth-2]);}
         break;
       case 43: // LocalItems -> LocalItem
 { CurrentSemanticValue = ValueStack[ValueStack.Depth-1];}
