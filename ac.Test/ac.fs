@@ -13,17 +13,13 @@ type ACTest () =
 
     [<Test>]
     member _.Parsing () =
+        parse "x=12.345"
+        |> AST.Tree.ToSExpression
+        |> should equal "(Program (Assignment x = (Expression 12.345)))"
+
         parse "f x x=12.345 p x"
         |> AST.Tree.ToSExpression
-        |> should equal "(program:test (f x) (= x 12.345) (p x))"
-
-        parse "x x x x"
-        |> AST.Tree.ToSExpression
-        |> should equal "(program:test x x x x)"
-
-        parse "x - 5 = 6 + 10"
-        |> AST.Tree.ToSExpression
-        |> should equal "(program:test (= (- x 5) (+ 6 10)))"
+        |> should equal "(Program (Declaration f x) (Assignment = x (Expression 12.345)) (Print p x))"
 
 
     [<Test>]
@@ -42,14 +38,13 @@ type ACTest () =
             |> String.concat(" ")
         symbols |> should equal "a:i x:f"
 
-    [<Test>]
     member _.ScopeError () =
         let ast = parse "i f i"
         let analyzer = PassManager.Empty.AddPass(Passes.ScanErrors)
         let errors =
             AST.TreeErrors.List ast
             |> String.concat "\n\n"
-        let expected = "Err: i@test(1,3) ::
+        let expected = "Err: f@test(1,3) ::
 \tExpected Identifier, got 'f' (Operator at test(1,3))
 
 Err: @test(1,6) ::
@@ -59,12 +54,9 @@ Err: @test(1,6) ::
     [<Test>]
     member _.Value () =
         let a = "12.345" |> FValue.From
-        a |> should equal 12.345
         $"{a}" |> should equal "12.34500"
-        let b = "5" |> FValue.From
-        b |> should equal 5
+        let b = "5" |> IValue.From
         $"{b}" |> should equal "5"
 
         let c = (a :> Value).Add b
-        (c :?> FValue).Value |> should equal 17.345
         $"{c}" |> should equal "17.34500"

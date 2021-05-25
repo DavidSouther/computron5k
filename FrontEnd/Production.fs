@@ -47,7 +47,11 @@ type OptionalProduction (production: Production) =
 type OneOfProduction (productions: List<Production>) =
     interface Production with
         override _.Literals = productions |> List.collect(fun p -> p.Literals)
-        override _.Terminals = productions |> List.collect(fun p -> p.Terminals)
+        override _.Terminals =
+            productions
+            |> List.collect(fun p -> p.Terminals)
+            |> Seq.distinct
+            |> Seq.toList
         override _.Matches (_: Token) = true
         override _.Consume (token: Token, scanner: Scanner) =
             match productions |> List.tryFind(fun p -> p.Matches token) with
@@ -57,6 +61,9 @@ type OneOfProduction (productions: List<Production>) =
                 let error = TreeLeaf token |> TreeErrors.Add message
                 scanner.Advance () |> ignore
                 error
+
+let someToken (token: Token option): bool =
+    token.IsSome && not(token.Value.Type = BaseTokenTypes.EOF)
 
 type RepeatedProduction (name: string, production: Production) =
     let repeatedTokenType = { TokenType.Name = name;
@@ -75,7 +82,7 @@ type RepeatedProduction (name: string, production: Production) =
             let mutable tree: Option<Tree<TreeData>> = None
             let errPosition = t.Position
             let mutable token = Some(t)
-            while token.IsSome && production.Matches token.Value do
+            while someToken token && production.Matches token.Value do
                 let t = production.Consume (token.Value, scanner)
                 tree <- match tree with
                         | Some(p) -> p |> Tree.AppendChild t
@@ -102,8 +109,8 @@ type StatementProduction (name: string, productions: List<Production>) =
                       ToMatch = [];
                         Error = false; }
     interface Production with
-        override _.Literals = productions |> List.collect(fun p -> p.Literals)
-        override _.Terminals = productions |> List.collect(fun p -> p.Terminals)
+        override _.Literals = productions |> List.collect(fun p -> p.Literals) |> Seq.distinct |> Seq.toList
+        override _.Terminals = productions |> List.collect(fun p -> p.Terminals) |> Seq.distinct |> Seq.toList
         override _.Matches (token: Token) =
             first.Matches token
         override _.Consume (t: Token, scanner: Scanner) =
@@ -117,7 +124,7 @@ type StatementProduction (name: string, productions: List<Production>) =
                 if token.IsSome && production.Matches token.Value
                 then
                     let t = production.Consume (token.Value, scanner)
-                    token <- scanner.Advance()
+                    token <- scanner.Next
                     tree <- tree |> Tree.AppendChild t
                 else
                     let message = $"Could not find production in statement"
@@ -145,5 +152,10 @@ type ExpressionProduction (operators: List<Operator>, ?identifiers0: TokenType, 
         override _.Matches (token: Token) = program.Matches token
         override _.Consume (token: Token, scanner: Scanner) =
             let tree = program.Consume(token, scanner)
-            scanner.Next |> ignore // TODO should be EOF
-            tree
+            match scanner.Next with
+            | Some(token) ->
+                if token.Type = BaseTokenTypes.EOF
+                then tree
+                else tree |> TreeErrors.Add "Program does not end with EOF"
+            | None -> tree
+

@@ -125,17 +125,19 @@ type BaseScanner (matcher: Matcher, contents: string, file: string) =
         step value
         token
 
+    let advance () = 
+        match matcher.MatchTokenType(contents, index) with
+        | Some(tokenType, matched) -> filledToken tokenType matched
+        | None -> errorToken ()
+        |> Some
+
     member _.File = file
 
     interface Scanner with
         override _.Next = next
 
         override t.Advance () =
-            next <-
-                match matcher.MatchTokenType(contents, index) with
-                | Some(tokenType, matched) -> filledToken tokenType matched
-                | None -> errorToken ()
-                |> Some
+            next <- advance ()
             next
             
 type SkipScanner (scanner: Scanner, toSkip: List<TokenType>) =
@@ -144,11 +146,8 @@ type SkipScanner (scanner: Scanner, toSkip: List<TokenType>) =
         | Some t -> toSkip |> List.contains t.Type
         | None -> true 
 
-    let consume () = while shouldSkip() do scanner.Advance() |> ignore
-
     interface Scanner with
         member _.Next =
-            consume()
             match scanner.Next with
             | None -> { Token.Type = BaseTokenTypes.Error;
                         Value = "UNEXPECTED_EOF";
@@ -159,22 +158,25 @@ type SkipScanner (scanner: Scanner, toSkip: List<TokenType>) =
             | Some _ -> scanner.Next
 
         member t.Advance () =
-            consume()
             scanner.Advance() |> ignore
+            while shouldSkip() do
+                scanner.Advance() |> ignore
             (t:>Scanner).Next
 
 // To simplify scanning over multiple files, the ScannerFactory takes
 // token types, and passes a Matcher for those TokenTypes to a Scanner
 // for any file. If given a string path, performs IO to load the file.
-type ScannerFactory (tokenTypes: List<TokenType>, ?toSkip: List<TokenType>) =
+type ScannerFactory (tokenTypes: List<TokenType>, ?toSkip0: List<TokenType>) =
+    let toSkip = defaultArg toSkip0 []
+    let tokenTypes = tokenTypes @ toSkip
     let matcher = Matcher tokenTypes
 
     member this.Scan (contents: string, file: string): Scanner =
         let baseScanner = BaseScanner(matcher, contents, file) 
-        let scanner = match toSkip with
-                      | Some skip -> SkipScanner(baseScanner, skip) :> Scanner
+        let scanner = match toSkip0 with
+                      | Some(skip) -> SkipScanner(baseScanner, skip) :> Scanner
                       | None -> baseScanner :> Scanner
-        scanner.Advance() |> ignore // Move to the first token
+        scanner.Advance () |> ignore // Start the scanner
         scanner
 
     member this.From(path: string) =

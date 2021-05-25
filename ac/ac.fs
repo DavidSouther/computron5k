@@ -17,12 +17,12 @@ let operators: List<Operator> = [
     MixedOperator("-", 20, 40)
 ]
 
-let Expression = ExpressionProduction(operators, identifiers)
+let Expression = ExpressionProduction(operators, identifiers, BaseTokenTypes.Value)
 let Identifier = SimpleProduction identifiers
 let Assignment = StatementProduction("Assignment", [Identifier; ConstProduction "="; Expression :> Production])
 let Declaration = StatementProduction("Declaration", [SimpleProduction declaration; Identifier])
 let Print = StatementProduction("Print", [ConstProduction "p"; Identifier])
-let Program = RepeatedProduction("Program", OneOfProduction([Declaration; Assignment; Print]))
+let Program = RepeatedProduction("Program", OneOfProduction([Assignment; Declaration; Print]))
 
 let parser = FrontEnd(ProgramProduction(Program))
 

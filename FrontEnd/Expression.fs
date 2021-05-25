@@ -4,7 +4,7 @@ open AST
 open Scanner
 
 type Operator =
-    abstract Token: string
+    abstract Tokens: string list
     abstract bindingPower: int
     abstract leftAction: Parser -> (* left *) Tree<TreeData> -> Token -> Tree<TreeData>
     abstract nullAction: Parser -> Token -> Tree<TreeData>
@@ -19,10 +19,15 @@ type Whitespace = TokenType
 type Comments = TokenType
 type Keywords = Set<string>
 
+// Get a list of (token, operator) tuples for the next map step
+let mapTokens (operator: Operator) =
+    operator.Tokens
+    |> List.map(fun token -> (token, operator))
+
 let makeOperatorParts (operators: List<Operator>) =
-    let allOps = operators |> List.map(fun op -> (op.Token, op))
-    let opsMap = allOps |> Map.ofList
-    let (allOps, _) = allOps |> List.unzip
+    let ops = operators |> List.collect(mapTokens)
+    let opsMap = ops |> Map.ofList
+    let (allOps, _) = ops |> List.unzip
     let opsToken = TokenType.Literal("Operator", 100, allOps)
     (opsToken, opsMap)
 
@@ -54,12 +59,12 @@ type BinaryOperator
         if defaultArg leftAssociative0 true
         then bindingPower + 1
         else bindingPower - 1
-    member _.Token = token
     interface Operator with
-        member _.Token = token
+        member _.Tokens = [token]
         member _.bindingPower = bindingPower
         member t.nullAction (_: Parser) (token: Token) =
-            TreeLeaf(errorToken($"Expected {t.Token} on left side", token.Position))
+            let expected = (t:>Operator).Tokens.[0]
+            TreeLeaf(errorToken($"Expected {expected} on left side", token.Position))
         member t.leftAction (parser: Parser) (left: Tree<TreeData>) (token: Token) =
             let right = parser.expression nextBindingPower
             if close.IsSome then parser.expect close.Value |> ignore
@@ -67,7 +72,7 @@ type BinaryOperator
             match left with
             | Node (lData, lChildren) ->
                 if continuation &&
-                    token.Value = t.Token &&
+                    token.Value = (t :> Operator).Tokens.[0] &&
                     lData.Token.Value = token.Value
                 then
                     match right with 
@@ -89,7 +94,7 @@ type MixedOperator (token: string, bindingPower: int, prefixBindingPower: int, ?
         else bindingPower - 1
     member _.Token = token
     interface Operator with
-        member _.Token = token
+        member _.Tokens = [token]
         member _.bindingPower = bindingPower
         member t.nullAction (parser: Parser) (token: Token) =
             let right = parser.expression prefixBindingPower
@@ -101,7 +106,7 @@ type MixedOperator (token: string, bindingPower: int, prefixBindingPower: int, ?
 type RightOperator (token: string, bindingPower: int, ?nullAction0: Parser -> Token -> Tree<TreeData>) =
     member _.Token = token
     interface Operator with
-        member _.Token = token
+        member _.Tokens = [token]
         member _.bindingPower = bindingPower
         member t.nullAction (parser: Parser) (token: Token) =
             match nullAction0 with
@@ -115,7 +120,7 @@ type RightOperator (token: string, bindingPower: int, ?nullAction0: Parser -> To
 type GroupOperator (token: string, close: string, ?scope0: bool) =
     let scope = defaultArg scope0 false
     interface Operator with
-        member _.Token = token
+        member _.Tokens = [token; close]
         member _.bindingPower = 0
         member _.nullAction (parser: Parser) (token: Token) =
             let group = parser.expression 0
@@ -134,7 +139,7 @@ type ParserFactory (operatorMap: Map<string, Operator>, tokenTypes: List<TokenTy
     member _.TokenTypes = tokenTypes
     member _.Parse (scanner: Scanner): Tree<TreeData> = 
         let rootToken = 
-            { Token.Value = "::expression::"
+            { Token.Value = ""
               Type =
                 { TokenType.Name = "::expression::"
                   Priority = 0
@@ -151,7 +156,7 @@ type ParserFactory (operatorMap: Map<string, Operator>, tokenTypes: List<TokenTy
                 member _.next () =
                     errorToken("UNIMPLEMENTED_PARSER", errorPosition) }
 
-        let Peek =
+        let Peek () =
             match scanner.Next with
             | None -> { Token.Type = BaseTokenTypes.Error;
                         Value = "UNEXPECTED_EOF";
@@ -162,7 +167,7 @@ type ParserFactory (operatorMap: Map<string, Operator>, tokenTypes: List<TokenTy
             | Some next ->  next
 
         let Advance () =
-            let peek = Peek 
+            let peek = Peek ()
             scanner.Advance() |> ignore
             peek
 
@@ -177,7 +182,7 @@ type ParserFactory (operatorMap: Map<string, Operator>, tokenTypes: List<TokenTy
             else left
 
         let bp () =
-            let token = Peek
+            let token = Peek ()
             if token.Type.Name = "EOF"
             then System.Int32.MinValue 
             else
@@ -187,7 +192,7 @@ type ParserFactory (operatorMap: Map<string, Operator>, tokenTypes: List<TokenTy
 
         parser <- { new Parser with
             member _.expression (mbp: int) =
-                let peek = Advance ()            
+                let peek = Advance ()
                 let mutable left = nud peek
                 while mbp < bp () do
                     let peek = Advance ()
@@ -204,11 +209,11 @@ type ParserFactory (operatorMap: Map<string, Operator>, tokenTypes: List<TokenTy
             next.Type.Name = BaseTokenTypes.EOF.Name
 
         let accepting (token: Token) =
-            List.contains token.Type tokenTypes
+            List.contains(token.Type)(tokenTypes) && not(isEOF(token))
 
         // Parse until the scanner is empty
         let mutable expressions: List<Tree<TreeData>> = List.empty
-        while accepting(Peek) do
+        while accepting(Peek()) do
             expressions <- expressions @ [parser.expression 0]
         TreeNode rootToken expressions
 

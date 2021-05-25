@@ -147,12 +147,19 @@ type TestScanner () =
         "<"
     ])
 
-    let makeScanner input =
+    let makeSkipScanner input (toSkip: Option<List<TokenType>>) =
         let tokenTypes: List<TokenType> = BaseTokenTypes.ALL @ [
             keywordTokenType
             operatorTokenType
         ]
-        ScannerFactory(tokenTypes).Scan(input, "test")
+        let scanner =
+            match toSkip with
+            | Some toSkip -> ScannerFactory(tokenTypes, toSkip)
+            | None -> ScannerFactory(tokenTypes)
+        scanner.Scan(input, "test")
+
+    let makeScanner input =
+        makeSkipScanner input None
 
     let expectToken (token: Token) ((tokenType: string, value: string, line: int, column: int))=
         token.Type.Name |> should equal tokenType
@@ -182,8 +189,9 @@ type TestScanner () =
             ("EOF", "", 3, 7)
         ] 
         for expected in expectedTokens do
-            let token = scanner.Advance ()
+            let token = scanner.Next
             expectToken token.Value expected
+            scanner.Advance() |> ignore
 
     [<Test>]
     member this.advancesWindowsLines () =
@@ -197,6 +205,27 @@ type TestScanner () =
             ("EOF", "", 3, 2)
         ] 
         for expected in expectedTokens do
-            let token = scanner.Advance ()
+            let token = scanner.Next
             expectToken token.Value expected
+            scanner.Advance() |> ignore
+
+    [<Test>]
+    member this.skipScanner () =
+        let toSkip = [BaseTokenTypes.Whitespace] |> Some
+        let scanner = makeSkipScanner "if a < b\nthen b\nelse a" toSkip
+        let expectedTokens: List<string*string*int*int> = [
+            ("Keyword", "if", 1, 1)
+            ("Identifier", "a", 1, 4)
+            ("Operator", "<", 1, 6)
+            ("Identifier", "b", 1, 8)
+            ("Keyword", "then", 2, 1)
+            ("Identifier", "b", 2, 6)
+            ("Keyword", "else", 3, 1)
+            ("Identifier", "a", 3, 6)
+            ("EOF", "", 3, 7)
+        ] 
+        for expected in expectedTokens do
+            let token = scanner.Next
+            expectToken token.Value expected
+            scanner.Advance() |> ignore
 

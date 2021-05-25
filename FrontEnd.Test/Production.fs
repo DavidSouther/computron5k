@@ -22,8 +22,10 @@ let simplePosition = {
 [<TestFixture>]
 type ProductionTest () =
     let makeScanner (input: string, production: Production) =
-        let literals = TokenType.Literal("literals", 0, production.Literals)
-        ScannerFactory(literals :: production.Terminals).Scan(input, "test")
+        let literals = match production.Literals with
+                       | [] -> []
+                       | _ -> [TokenType.Literal("literals", 0, production.Literals)]
+        ScannerFactory(literals @ production.Terminals).Scan(input, "test")
 
     [<Test>]
     member _.test_ConstProduction () =
