@@ -170,7 +170,7 @@ ArgumentList                :   Expression                     { $$ = $1;  }
 // TODO
 Expression                  :   QualifiedName ASSIGN Expression { $$ = new Expression($1, ExprKind.ASSIGN, $3); }
    /* short-circuit OR  */  |   Expression OP_LOR Expression    { $$ = new Expression($1, ExprKind.OP_LOR, $3); } 
-   /* short-circuit AND */  |   Expression OP_LAND Expression   { $$ = new Expression($1, ExprKind.OP_LOR, $3); }
+   /* short-circuit AND */  |   Expression OP_LAND Expression   { $$ = new Expression($1, ExprKind.OP_LAND, $3); }
                             |   Expression PIPE Expression      { $$ = new Expression($1, ExprKind.PIPE, $3); }
                             |   Expression HAT Expression       { $$ = new Expression($1, ExprKind.HAT, $3); }
                             |   Expression AND Expression       { $$ = new Expression($1, ExprKind.AND, $3); }

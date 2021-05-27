@@ -199,25 +199,32 @@ namespace ASTBuilder
                 {
                     if (node.exprKind == ExprKind.OP_LAND)
                     {
-                        // Short circuit and
-                        var endLabel = MakeLabel("and_short_circuit");
+                        // Short circuit and, a ? b : false
+                        var skipLabel = MakeLabel("_and_short_circuit");
+                        var endLabel = MakeLabel("_and_end");
                         VisitNode(left);
-                        file.WriteLine($"  bfalse.s {endLabel}");
+                        file.WriteLine($"  brfalse.s {skipLabel}");
                         // Left was true, clear it from the stack
-                        file.WriteLine("  pop");
                         VisitNode(right);
+                        file.WriteLine($"  br {endLabel}");
+                        file.WriteLine($"{skipLabel}:");
+                        file.WriteLine($"  ldc.i4.0"); // Literal false
                         // Right is final state of expression
                         file.WriteLine($"{endLabel}:");
+
                     }
                     else if (node.exprKind == ExprKind.OP_LOR)
                     {
-                        // Short circuit OR
-                        var endLabel = MakeLabel("or_short_circuit");
+                        // Short circuit OR, a ? true : b
+                        var skipLabel = MakeLabel("_or_short_circuit");
+                        var endLabel = MakeLabel("_or_end");
                         VisitNode(left);
-                        file.WriteLine($"  btrue.s {endLabel}");
+                        file.WriteLine($"  brtrue.s {skipLabel}");
                         // Left was false, clear it from the stack
-                        file.WriteLine("  pop");
                         VisitNode(right);
+                        file.WriteLine($"  br {endLabel}");
+                        file.WriteLine($"{skipLabel}:");
+                        file.WriteLine($"  ldc.i4.m1");
                         // Right is final state of expression
                         file.WriteLine($"{endLabel}:");
                     }
