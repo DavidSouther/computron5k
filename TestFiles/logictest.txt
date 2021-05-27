@@ -3,7 +3,7 @@
 
 public class logictest {
 
-   public static void outStrln(String s) {
+   public static void outStrln(string s) {
      WriteLine(s);
    }
 
@@ -12,16 +12,16 @@ public class logictest {
      i = 0;
      j = 1;
      outStrln("TCCL logic test");
-     if ( i < 10 & j == 1 ) 
-        outStrln("In then part of & test");
+     if ( i < 10 && j == 1 ) 
+        outStrln("In then part of && test");
      else  i = j; 
-     if ( i < 10 & j == 0 ) 
-        logictest.outStrln("In then part of 2nd & test erroneously");
-     else  outStrln("In else part of 2nd & test"); 
-     if ( i == 10 | j == i) j = i;
-     else  outStrln("In else part of false | test"); 
-     if ( i == 1 | j == 1) outStrln("In then part of true | test");
-     else  outStrln("In else part of true | test erroneously"); 
+     if ( i < 10 && j == 0 ) 
+        logictest.outStrln("In then part of 2nd && test erroneously");
+     else  outStrln("In else part of 2nd && test"); 
+     if ( i == 10 || j == i) j = i;
+     else  outStrln("In else part of false || test"); 
+     if ( i == 1 || j == 1) outStrln("In then part of true || test");
+     else  outStrln("In else part of true || test erroneously"); 
      
    }
 }
