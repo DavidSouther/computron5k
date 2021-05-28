@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
 
 namespace ASTBuilder
@@ -97,23 +93,28 @@ namespace ASTBuilder
 
             // The two lines that follow generate the prelude required in all .il files
             file.WriteLine(".assembly extern mscorlib {}");
-            file.WriteLine(".assembly test1 { }");
 
             VisitChildren(node);
+        }
+
+        public void VisitNode(ClassDeclaration node)
+        {
+            var name = node.Child.Sib.ToString();
+            file.WriteLine($".assembly {name} {{ }}");
+
+            VisitNode(node.Child.Sib.Sib);
         }
 
         public void VisitNode(MethodDeclaration node)
         {
             currentMethod = (MethodAttributes) node.NodeType;
             dynamic modifiers = node.Child;
-            var name = modifiers.Sib.Sib.Child.ToString();
-            file.WriteLine($".method static {currentMethod.Return} {name}()");
+            var name = currentMethod.Name;
+            file.WriteLine($".method static {currentMethod.Return} {name}({currentMethod.Args()})");
             file.WriteLine("{");
             if (name == "main") file.WriteLine("  .entrypoint");
             file.WriteLine("  .maxstack 32"); // TODO calculate size
-            file.Write("  .locals init (");
-            file.Write(String.Join(", ", currentMethod.Locals.Select(x => x.Type)));
-            file.WriteLine(")");
+            file.WriteLine($"  .locals init ({currentMethod.InitLocals()})");
             VisitChildren(node);
             file.WriteLine("  ret");
             file.WriteLine("}");
@@ -124,10 +125,23 @@ namespace ASTBuilder
 
         public void VisitNode(MethodCall node) {
             Trace(node);
-            var ret = "void";
-            var arg = "string";
             dynamic name = node.Child;
-            dynamic argument = name.Sib;
+
+            doArgs(name.Sib);
+
+            if (name.ToString() == "Write" || name.ToString() == "WriteLine")
+            {
+                var type = ((TypeAttributes)name.Sib.NodeType).thisType;
+                file.WriteLine($"  call void [mscorlib]System.Console::WriteLine({type})");
+            } else
+            {
+                var type = (MethodAttributes)node.Child.NodeType;
+                file.WriteLine($"  call {type.Return.type} {type.Name}({type.Args()})");
+            }
+        }
+
+        private void doArgs(dynamic argument)
+        {
             inExpression = true;
             while (argument != null)
             {
@@ -135,14 +149,6 @@ namespace ASTBuilder
                 argument = argument.Sib;
             }
             inExpression = false;
-            if (name.ToString() == "Write" || name.ToString() == "WriteLine")
-            {
-                var type = ((TypeAttributes)name.Sib.NodeType).thisType;
-                file.WriteLine($"  call void [mscorlib]System.Console::WriteLine({type})");
-            } else
-            {
-                file.WriteLine($"  call {ret} {name}({arg})");
-            }
         }
 
         public void VisitNode(STR_CONST node)

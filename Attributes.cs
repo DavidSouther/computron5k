@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ASTBuilder
 {
@@ -57,14 +58,18 @@ namespace ASTBuilder
     
     public class MethodAttributes : Attributes
     {
+        public string Name;
+        public ClassAttributes Class;
         public TypeDescriptor Return;
         public List<TypeDescriptor> Arguments;
         public List<TypeDeclaration> Locals = new List<TypeDeclaration>();
 
-        public MethodAttributes(TypeDescriptor ret, List<TypeDescriptor> args)
+        public MethodAttributes(string name, ClassAttributes clazz, TypeDescriptor ret, List<TypeDescriptor> args)
         {
             Return = ret;
             Arguments = args;
+            Name = name;
+            Class = clazz;
         }
 
         public override string ToString()
@@ -103,6 +108,23 @@ namespace ASTBuilder
                 }
             }
             return -1;
+        }
+
+        public string Call()
+        {
+            var ret = "void";
+            var arg = "string";
+            return $"call {ret} {Name}({arg})";
+        }
+
+        public string Args()
+        {
+            return String.Join(", ", Arguments);
+        }
+
+        public string InitLocals()
+        {
+            return String.Join(", ", Locals.Select(x => x.Type));
         }
     }
 

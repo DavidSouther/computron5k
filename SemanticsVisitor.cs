@@ -258,7 +258,7 @@ namespace ASTBuilder
             var parameters = (ParameterList)name.Sib;
             var returnType = TypeDescriptor.From(typeSpec);
             var types = parameters == null ? new List<TypeDescriptor>() : parameters.Types();
-            var attrs = new MethodAttributes(returnType, types);
+            var attrs = new MethodAttributes(name.ToString(), GetCurrentClass(), returnType, types);
             GetCurrentClass().enter(name.ToString(), attrs);
             table.enterInParent(name.ToString(), attrs);
             SetCurrentMethod(attrs);

@@ -19,8 +19,8 @@ namespace ASTBuilder
 		public Symtab fillSystem()
         {
 			openScope();
-			enter("WriteLine", new MethodAttributes(new VoidTypeDescriptor(), new List<TypeDescriptor> { new StringTypeDescriptor() }));
-			enter("Write", new MethodAttributes(new VoidTypeDescriptor(), new List<TypeDescriptor> { new StringTypeDescriptor() }));
+			enter("WriteLine", new MethodAttributes("WriteLine", new ClassAttributes("System.Console"), new VoidTypeDescriptor(), new List<TypeDescriptor> { new StringTypeDescriptor() }));
+			enter("Write", new MethodAttributes("Write", new ClassAttributes("System.Console"), new VoidTypeDescriptor(), new List<TypeDescriptor> { new StringTypeDescriptor() }));
 			return this;
         }
 
