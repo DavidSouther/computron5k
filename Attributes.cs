@@ -61,10 +61,10 @@ namespace ASTBuilder
         public string Name;
         public ClassAttributes Class;
         public TypeDescriptor Return;
-        public List<TypeDescriptor> Arguments;
+        public List<TypeDeclaration> Arguments;
         public List<TypeDeclaration> Locals = new List<TypeDeclaration>();
 
-        public MethodAttributes(string name, ClassAttributes clazz, TypeDescriptor ret, List<TypeDescriptor> args)
+        public MethodAttributes(string name, ClassAttributes clazz, TypeDescriptor ret, List<TypeDeclaration> args)
         {
             Return = ret;
             Arguments = args;
@@ -82,7 +82,7 @@ namespace ASTBuilder
             {
                 foreach (var arg in Arguments)
                 {
-                    ret += arg.type + " -> ";
+                    ret += arg.Type.type + " -> ";
                 }
             }
             ret += Return.type;
@@ -100,6 +100,13 @@ namespace ASTBuilder
 
         public int Location(QualifiedName name)
         {
+            for (var i = 0; i < Arguments.Count; i++)
+            {
+                if (name.ToString() == Arguments[i].Name)
+                {
+                    return -i - 1;
+                }
+            }
             for(var i = 0; i < Locals.Count; i++)
             {
                 if (name.ToString() == Locals[i].Name)
@@ -119,7 +126,7 @@ namespace ASTBuilder
 
         public string Args()
         {
-            return String.Join(", ", Arguments);
+            return String.Join(", ", Arguments.Select(x => x.Type));
         }
 
         public string InitLocals()

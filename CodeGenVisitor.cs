@@ -174,7 +174,12 @@ namespace ASTBuilder
         {
             // Generate stloc for node
             int location = currentMethod.Location(node);
-            if (location < 4)
+            if (location < 0)
+            {
+                location = -(location + 1);
+                file.WriteLine($"  starg.{location}");
+            }
+            else if (location < 4)
             {
                file.WriteLine($"  stloc.{location}");
             } else if (location < 128)
@@ -287,7 +292,15 @@ namespace ASTBuilder
         {
             if (!inExpression) return;
             var loc = currentMethod.Location(node);
-            file.WriteLine($"  ldloc.{loc}");
+            if (loc < 0)
+            {
+                loc = -(loc + 1);
+                file.WriteLine($"  ldarg.{loc}");
+            }
+            else
+            {
+                file.WriteLine($"  ldloc.{loc}");
+            }
         }
 
         public void VisitNode(SelectionStatement node)

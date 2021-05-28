@@ -165,6 +165,17 @@ namespace ASTBuilder
         {
             return TypeDescriptor.From(Child);
         }
+
+        public string Name {
+            get {
+                return Child.Sib.ToString();
+            }
+        }
+
+        public TypeDeclaration Declaration()
+        {
+            return new TypeDeclaration(Name, Type());
+        }
     }
 
     public class ParameterList : AbstractNode
@@ -174,13 +185,13 @@ namespace ASTBuilder
             adoptChildren(parameter);
         }
 
-        public List<TypeDescriptor> Types()
+        public List<TypeDeclaration> Types()
         {
-            var parameters = new List<TypeDescriptor>();
+            var parameters = new List<TypeDeclaration>();
             dynamic child = Child;
             while (child != null)
             {
-                parameters.Add(((Parameter)child).Type());
+                parameters.Add(((Parameter)child).Declaration());
                 child = child.Sib;
             }
 

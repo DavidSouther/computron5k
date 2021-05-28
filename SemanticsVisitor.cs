@@ -257,7 +257,7 @@ namespace ASTBuilder
             dynamic name = signature.Child;
             var parameters = (ParameterList)name.Sib;
             var returnType = TypeDescriptor.From(typeSpec);
-            var types = parameters == null ? new List<TypeDescriptor>() : parameters.Types();
+            var types = parameters == null ? new List<TypeDeclaration>() : parameters.Types();
             var attrs = new MethodAttributes(name.ToString(), GetCurrentClass(), returnType, types);
             GetCurrentClass().enter(name.ToString(), attrs);
             table.enterInParent(name.ToString(), attrs);
@@ -315,7 +315,7 @@ namespace ASTBuilder
                 if (argument.NodeType is TypeAttributes)
                 {
                     var actualTypeString = ((TypeAttributes)argument.NodeType).ToString();
-                    var expectedTypeString = argType.type;
+                    var expectedTypeString = argType.Type.type;
                     if (actualTypeString != expectedTypeString)
                     {
                         node.NodeType = new ErrorAttributes("Mismatched arguments in position " + pos + ", expected " + expectedTypeString + " got " + actualTypeString);
