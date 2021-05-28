@@ -70,7 +70,7 @@ MethodSignature     :   IDENTIFIER LPAREN ParameterList RPAREN                  
                     ;
 
 ParameterList       :   Parameter                                                   { $$ = new ParameterList($1); }
-                    |   ParameterList COMMA Parameter                               { $1.makeSibling($3); $$ = $1;}  
+                    |   ParameterList COMMA Parameter                               { $1.Child.makeSibling($3); $$ = $1;}  
                     ;
 
 Parameter           :   TypeSpecifier IDENTIFIER                                    { $$ = new Parameter($1, $2); }
