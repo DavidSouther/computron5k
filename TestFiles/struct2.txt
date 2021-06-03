@@ -26,8 +26,8 @@ public class structPoint {
         p1.init(5, 8);
         p2.init(2, 20);
 
-        Console.WriteLine("({0}, {1}) . ({2}, {3}) = {4}.",
-                x1, y1, x2, y2, p1.DotProduct(p2));
+        WriteLine("({0}, {1}) . ({2}, {3}) = {4}.",
+                p1.x, p1.y, p2.x, p2.y, p1.DotProduct(p2));
      }   
    }
 }

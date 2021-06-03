@@ -26,7 +26,7 @@ public class structTest {
      int gobble;
      WriteLine ("TCCL test of factorial in a struct");
      t.init (0);
-     while ( test.control < 15) {
+     while ( t.control < 15) {
         gobble = t.factorial (t.control);
         WriteLine (gobble);
         t.control = t.control + 1;
