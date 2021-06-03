@@ -35,9 +35,13 @@ namespace ASTBuilder
                     case EnumPrimitiveType.INT: return new IntegerTypeDescriptor();
                 }
             }
-            if (node is QualifiedName)
+            if (node is QualifiedName name)
             {
-                return new QualifiedTypeDescriptor((QualifiedName)node);
+                if (name.ToString().ToLower() == "string")
+                {
+                    return new StringTypeDescriptor();
+                }
+                return new QualifiedTypeDescriptor(name);
             }
             return new VoidTypeDescriptor();
         }

@@ -2,13 +2,13 @@
 
 public class twomethods1 {
 
-	public void check (int x)
+	public static void check (int x)
 	{
 		Write("The argument to check was ");
 		WriteLine(x);
 	}
 	
-	public void main ()
+	public static void main ()
 	{
 		check(12345);
 		WriteLine("Back in main");

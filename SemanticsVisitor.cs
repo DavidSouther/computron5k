@@ -186,6 +186,8 @@ namespace ASTBuilder
             else if (left != null && left.Equals(right))
             {
                 switch (node.exprKind) {
+                    case ExprKind.AND:
+                    case ExprKind.PIPE:
                     case ExprKind.OP_LAND:
                     case ExprKind.OP_LOR:
                         // both must be boolean, type is boolean

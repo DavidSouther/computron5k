@@ -3,7 +3,7 @@
 
 public class writenums {
 
-	public void main ()
+	public static void main ()
 	{
 		WriteLine(5);
 		WriteLine(5*2+6/4);

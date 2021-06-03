@@ -3,7 +3,7 @@
 
 public class compute {
     
-    public void main ()
+    public static void main ()
     {
         int w,x;
         x = 3+4;  
