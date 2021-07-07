@@ -44,7 +44,7 @@ export function bits(i: number): string {
 }
 
 function int(n: string, radix: number): number {
-    let i = parseInt(n.replace(/[^\d+-\.xa-fA-F]/g, ''), radix);
+    let i = parseInt(n.replace(/[^\d+-.xa-fA-F]/g, ''), radix);
     i = i & 0xffff;
     if (i & 0x8000) {
         return -((~i+1) & 0xffff);

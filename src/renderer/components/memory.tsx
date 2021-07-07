@@ -1,6 +1,7 @@
 import { FC, useState } from "react";
 import { Memory as MemoryChip } from "../../simulator/chips/memory";
 import { bin, dec, hex } from "../../util/twos";
+import ButtonBar from "../widgets/button_bar";
 
 const Memory: FC<{memory: MemoryChip}> = ({memory}) => {
     const [format, setFormat] = useState<'bin'|'dec'|'hex'>('dec');
@@ -14,16 +15,21 @@ const Memory: FC<{memory: MemoryChip}> = ({memory}) => {
         }
     }
 
-    return (<>
-        <button onClick={() => setFormat('bin')}>bin</button>
-        <button onClick={() => setFormat('dec')}>dec</button>
-        <button onClick={() => setFormat('hex')}>hex</button>
-        <table><tbody>{
-        [...memory.map((i, v) => (
-            <tr key={i}><td>{i}</td><td>{doFormat(v)}</td></tr>
-        ))]
-        }</tbody></table>
-    </>);
+    return (
+    <div>
+        <ButtonBar<'bin'|'dec'|'hex'> value={format} values={['bin', 'dec', 'hex']} onClick={setFormat} />
+        <div className="overflow-y-scroll">
+            <table className="border-collapse"><tbody>{
+            [...memory.map((i, v) => (
+                <tr key={i}>
+                    <td className="border px-4">{i}</td>
+                    <td className="border px-4">{doFormat(v)}</td>
+                </tr>
+            ))]
+            }</tbody></table>
+        </div>
+    </div>
+    );
 }
 
 export default Memory;
