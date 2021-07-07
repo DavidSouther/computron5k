@@ -3,7 +3,7 @@ import { Memory as MemoryChip } from '../../simulator/chips/memory';
 import MemoryGUI from '../components/memory';
 
 const CPU: FC<{memory: MemoryChip}> = ({memory}) => (<>
-    CPU
+    <h1 className="text-6xl">CPU Emulator</h1>
     <MemoryGUI memory={memory} />
 </>);
 
