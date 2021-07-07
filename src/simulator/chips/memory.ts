@@ -7,8 +7,12 @@ export class Memory {
         return this.memory.length;
     }
 
-    constructor(memory: ArrayBuffer) {
-        this.memory = new Int16Array(memory);
+    constructor(memory: ArrayBuffer|number) {
+        if (typeof memory === 'number') {
+            this.memory = new Int16Array(memory);
+        } else {
+            this.memory = new Int16Array(memory);
+        }
     }
 
     get(index: number): number {
