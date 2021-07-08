@@ -7,7 +7,7 @@ import { HACK } from './testing/mult';
 const RAM = new Memory(new Int16Array([2, 3, 0]));
 const ROM = new Memory(HACK);
 
-const COMPUTER = new Computer({RAM, ROM});
+const COMPUTER = new Computer({ROM});
 
 function App() {
   return (

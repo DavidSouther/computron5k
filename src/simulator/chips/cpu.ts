@@ -21,7 +21,7 @@ export class CPU {
         return this.d;
     }
 
-    constructor({RAM, ROM}: {RAM: Memory, ROM: Memory}) {
+    constructor({RAM = new Memory(0x7fff), ROM}: {RAM?: Memory, ROM: Memory}) {
         this.RAM = RAM;
         this.ROM = ROM;
     }
