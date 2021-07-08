@@ -37,3 +37,35 @@ function cInstruction(op: number): string {
 function aInstruction(op: number): string {
     return '@' + (op & 0x7fff).toString(10);
 }
+
+export function op(asm: string): number {
+    if (asm[0] === '@') {
+        return aop(asm);
+    } else {
+        return cop(asm);
+    }
+}
+
+function aop(asm: string): number {
+    return parseInt(asm.substring(1), 10);
+}
+
+function cop(asm: string): number {
+    let parts = asm.match(/(?:([AMD]{1,3})=)?([-!01ADM&|]{1,3})(?:;(JGT|JLT|JGE|JLE|JEQ|JMP))?/)!;
+    if (parts.length === 2) {
+        parts = ['', parts[1], ''];
+    } else if (parts.length === 3) {
+        if (parts[2][0] === ';') {
+            parts = ['', parts[1], parts[2]];
+        } else {
+            parts = [parts[1], parts[2], ''];
+        }
+    }
+    const [_, assign, operation, jump] = parts;
+    const mode = operation.indexOf('M') > 0 ? 1 : 0;
+    const aop = ASSIGN.asm[assign as keyof typeof ASSIGN.asm] ?? 0;
+    const jop = JUMP.asm[jump as keyof typeof JUMP.asm] ?? 0;
+    const cop = COMMANDS.asm[operation as keyof typeof COMMANDS.asm] ?? 0;
+
+    return 0xD000 | (mode << 12) | (cop << 6) | (aop << 3) | jop;
+}

@@ -94,29 +94,29 @@ export enum Flags {
 } 
 
 export function alu(op: number, d: number, a: number): [number, Flags] {
+    let o = 0;
     switch(op) {
-        case 0x2A: d = 0; break;
-        case 0x3F: d = 1; break;
-        case 0x3A: d = -1; break;
-        case 0x0C: d = d; break;
-        case 0x30: d = a; break;
-        case 0x0D: d = ~d; break;
-        case 0x31: d = ~a; break;
-        case 0x0F: d = -d; break;
-        case 0x33: d = -a; break;
-        case 0x1F: d = d + 1; break;
-        case 0x37: d = a + 1; break;
-        case 0x0E: d = d - 1; break;
-        case 0x32: d = a - 1; break;
-        case 0x02: d = d + a; break;
-        case 0x13: d = d - a; break;
-        case 0x07: d = a - d; break;
-        case 0x00: d = d & a; break;
-        case 0x15: d = d | a; break;
+        case 0x2A: o = 0; break;
+        case 0x3F: o = 1; break;
+        case 0x3A: o = -1; break;
+        case 0x0C: o = d; break;
+        case 0x30: o = a; break;
+        case 0x0D: o = ~d; break;
+        case 0x31: o = ~a; break;
+        case 0x0F: o = -d; break;
+        case 0x33: o = -a; break;
+        case 0x1F: o = d + 1; break;
+        case 0x37: o = a + 1; break;
+        case 0x0E: o = d - 1; break;
+        case 0x32: o = a - 1; break;
+        case 0x02: o = d + a; break;
+        case 0x13: o = d - a; break;
+        case 0x07: o = a - d; break;
+        case 0x00: o = d & a; break;
+        case 0x15: o = d | a; break;
     }
     
-    const s = Math.sign(d);
-    d = d & 0xffff;
-    const flags = d === 0 ? Flags.Zero : (d & 0x8000) ? Flags.Negative : Flags.Positive;
-    return [d, flags];
+    o = o & 0xffff;
+    const flags = o === 0 ? Flags.Zero : (o & 0x8000) ? Flags.Negative : Flags.Positive;
+    return [o, flags];
 }

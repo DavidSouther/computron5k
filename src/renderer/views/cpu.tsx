@@ -29,7 +29,7 @@ const CPU: FC<{cpu: CPUChip}> = ({cpu}) => {
         </div>
         <div>
             <MemoryGUI name="RAM" memory={cpu.RAM} />
-            <MemoryGUI name="ROM" memory={cpu.ROM} highlight={PC} />
+            <MemoryGUI name="ROM" memory={cpu.ROM} highlight={PC} editable={false} />
         </div>
     </>);
 };
